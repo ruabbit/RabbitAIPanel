@@ -197,3 +197,20 @@ class PlanAssignment(Base):
     effective_to: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
     timezone: Mapped[str] = mapped_column(String(32), default="UTC+8")
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class Usage(Base):
+    __tablename__ = "usage"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer)
+    team_id: Mapped[Optional[int]] = mapped_column(Integer)
+    model: Mapped[str] = mapped_column(String(128))
+    unit: Mapped[str] = mapped_column(String(16), default="token")
+    input_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    output_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    total_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    computed_amount_cents: Mapped[int] = mapped_column(BigInteger, default=0)
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    success: Mapped[bool] = mapped_column(Boolean, default=True)
+    request_id: Mapped[Optional[str]] = mapped_column(String(64))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)

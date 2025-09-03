@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import datetime as dt
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
 from ..db import SessionLocal
-from ..models import Plan, DailyLimitPlan, UsagePlan, PriceRule, PlanAssignment
+from ..models import Plan, DailyLimitPlan, UsagePlan, PriceRule, PlanAssignment, Usage
+from sqlalchemy import func
 
 
 @contextmanager
@@ -100,10 +101,90 @@ def utc8_day_start(now: Optional[dt.datetime] = None, hhmm: str = "00:00") -> dt
     return start_local - dt.timedelta(hours=8)
 
 
-def check_daily_limit_placeholder(user_id: int, *, currency: str = "USD") -> tuple[bool, str]:
-    """Placeholder for daily limit enforcement.
-    Returns (allowed, reason). Will be wired into proxy path in future steps.
-    """
-    # TODO: compute today's spend since utc8_day_start and compare with DailyLimitPlan
-    return True, "ok"
+def _match_pattern(model: str, pattern: str) -> bool:
+    if pattern == "*":
+        return True
+    if pattern.endswith("*"):
+        return model.startswith(pattern[:-1])
+    if pattern.startswith("*"):
+        return model.endswith(pattern[1:])
+    return model == pattern
+
+
+def find_price_rule(session: Session, plan_id: int, model: str, unit: str = "token") -> Optional[PriceRule]:
+    rules = session.query(PriceRule).filter_by(plan_id=plan_id, unit=unit).all()
+    # Prefer exact > prefix/suffix wildcard; keep first match
+    exact = [r for r in rules if _match_pattern(model, r.model_pattern) and r.model_pattern == model]
+    if exact:
+        return exact[0]
+    wildcard = [r for r in rules if _match_pattern(model, r.model_pattern)]
+    return wildcard[0] if wildcard else None
+
+
+def estimate_token_cost_cents(pr: PriceRule, *, input_tokens: int = 0, output_tokens: int = 0, total_tokens: Optional[int] = None) -> int:
+    total_tokens = total_tokens if total_tokens is not None else (input_tokens + output_tokens)
+    base = pr.unit_base_price_cents
+    amount = 0.0
+    if pr.input_multiplier or pr.output_multiplier:
+        im = pr.input_multiplier or 1.0
+        om = pr.output_multiplier or 1.0
+        amount = base * ((input_tokens / 1000.0) * im + (output_tokens / 1000.0) * om)
+    else:
+        pm = pr.price_multiplier or 1.0
+        amount = base * (total_tokens / 1000.0) * pm
+    if pr.min_charge_cents and amount < pr.min_charge_cents:
+        amount = float(pr.min_charge_cents)
+    return int(round(amount))
+
+
+def estimate_cost_for_tokens(user_id: int, *, model: str, input_tokens: int, output_tokens: int, total_tokens: Optional[int] = None) -> Tuple[int, Optional[str]]:
+    with session_scope() as s:
+        pa = get_assignment("user", user_id)
+        if not pa:
+            return 0, None
+        pr = find_price_rule(s, pa.plan_id, model, unit="token")
+        if not pr:
+            return 0, None
+        cents = estimate_token_cost_cents(pr, input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=total_tokens)
+        return cents, pa.timezone
+
+
+def check_daily_limit(user_id: int, *, add_amount_cents: int, timezone: str = "UTC+8") -> Tuple[bool, str, Optional[str]]:
+    """Check if adding amount would exceed today's daily limit. Returns (allowed, policy, reason)."""
+    with session_scope() as s:
+        pa = get_assignment("user", user_id)
+        if not pa:
+            return True, "none", "no plan"
+        dlp = s.get(DailyLimitPlan, pa.plan_id)
+        if not dlp:
+            return True, "none", "no daily limit"
+        # today window start in UTC based on plan reset_time / UTC+8
+        start = utc8_day_start(hhmm=dlp.reset_time)
+        total = s.query(func.coalesce(func.sum(Usage.computed_amount_cents), 0)).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.currency == "USD").scalar() or 0
+        if total + add_amount_cents <= dlp.daily_limit_cents:
+            return True, dlp.overflow_policy, "within limit"
+        # overflow
+        if dlp.overflow_policy == "block":
+            return False, dlp.overflow_policy, "daily limit exceeded"
+        elif dlp.overflow_policy in ("grace", "degrade"):
+            return True, dlp.overflow_policy, "overflow grace/degrade"
+        return False, dlp.overflow_policy, "exceeded"
+
+
+def record_usage_row(user_id: int, *, model: str, input_tokens: int, output_tokens: int, total_tokens: Optional[int], computed_amount_cents: int, request_id: Optional[str]) -> None:
+    with session_scope() as s:
+        u = Usage(
+            user_id=user_id,
+            team_id=None,
+            model=model,
+            unit="token",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens or (input_tokens + output_tokens),
+            computed_amount_cents=computed_amount_cents,
+            currency="USD",
+            success=True,
+            request_id=request_id,
+        )
+        s.add(u)
 
