@@ -17,6 +17,7 @@ from middleware.db import init_db
 from middleware.payments.service import create_checkout, process_webhook, refund_payment, get_payment_status
 from middleware.config import settings
 from .wallets import router as wallets_router
+from .plans import router as plans_router
 from middleware.integrations.litellm_sync import sync_wallets_to_litellm
 
 
@@ -245,6 +246,7 @@ def demo_payment_element():
 
 # Mount wallets API
 app.include_router(wallets_router)
+app.include_router(plans_router)
 
 
 # Simple config endpoint to retrieve Stripe publishable key for frontend

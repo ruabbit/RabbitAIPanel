@@ -138,3 +138,62 @@ class ProviderEvent(Base):
     raw: Mapped[Optional[dict]] = mapped_column(SQLITE_JSON)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
 
+
+# -----------------------------
+# Billing Plans & Pricing
+# -----------------------------
+
+class Plan(Base):
+    __tablename__ = "plans"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    type: Mapped[str] = mapped_column(String(32), nullable=False)  # daily_limit | usage
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    status: Mapped[str] = mapped_column(String(32), default="active")  # active | archived
+    meta: Mapped[Optional[dict]] = mapped_column(SQLITE_JSON)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class DailyLimitPlan(Base):
+    __tablename__ = "daily_limit_plans"
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"), primary_key=True)
+    daily_limit_cents: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    overflow_policy: Mapped[str] = mapped_column(String(16), default="block")  # block|grace|degrade
+    reset_time: Mapped[str] = mapped_column(String(8), default="00:00")  # HH:MM
+    timezone: Mapped[str] = mapped_column(String(32), default="UTC+8")
+
+
+class UsagePlan(Base):
+    __tablename__ = "usage_plans"
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"), primary_key=True)
+    billing_cycle: Mapped[str] = mapped_column(String(16), default="monthly")  # monthly|weekly
+    min_commit_cents: Mapped[Optional[int]] = mapped_column(BigInteger)
+    credit_grant_cents: Mapped[Optional[int]] = mapped_column(BigInteger)
+
+
+class PriceRule(Base):
+    __tablename__ = "price_rules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"), nullable=False)
+    model_pattern: Mapped[str] = mapped_column(String(128), nullable=False)
+    unit: Mapped[str] = mapped_column(String(16), default="token")  # token|request|minute|image
+    unit_base_price_cents: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    input_multiplier: Mapped[Optional[float]] = mapped_column()
+    output_multiplier: Mapped[Optional[float]] = mapped_column()
+    price_multiplier: Mapped[Optional[float]] = mapped_column()
+    min_charge_cents: Mapped[Optional[int]] = mapped_column(BigInteger)
+    effective_from: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
+    effective_to: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
+
+
+class PlanAssignment(Base):
+    __tablename__ = "plan_assignments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(16), nullable=False)  # user|team
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active|paused|canceled
+    effective_from: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
+    effective_to: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
+    timezone: Mapped[str] = mapped_column(String(32), default="UTC+8")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)

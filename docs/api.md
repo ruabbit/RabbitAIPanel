@@ -60,6 +60,19 @@ Notes:
 - Payment Element demo page: `/demo/payment_element?api=http://localhost:8000&key=$DEV_API_KEY`
 - It fetches publishable key from `/v1/config/stripe` automatically; `pk` query param can override for testing.
 
+## Plans (Management)
+- `POST /v1/plans` create a plan: `{ name, type: daily_limit|usage, currency }`
+- `POST /v1/plans/daily_limit` upsert daily-limit details: `{ plan_id, daily_limit_cents, overflow_policy(block|grace|degrade), reset_time(HH:MM), timezone }`
+- `POST /v1/plans/usage` upsert usage-plan details: `{ plan_id, billing_cycle(monthly|weekly), min_commit_cents?, credit_grant_cents? }`
+- `POST /v1/plans/pricing` add price rule: `{ plan_id, model_pattern, unit(token|request|minute|image), unit_base_price_cents, input_multiplier?, output_multiplier?, price_multiplier?, min_charge_cents? }`
+- `POST /v1/plans/assign` assign plan to user/team: `{ entity_type(user|team), entity_id, plan_id, timezone }`
+- `GET /v1/plans/{plan_id}` get plan metadata
+- `GET /v1/plans/assignment/{entity_type}/{entity_id}` get current assignment
+
+Notes:
+- Daily limit reset timezone is UTC+8; overflow default is `block` (grace/degrade supported).
+- Pricing uses per-model base prices with optional input/output multipliers; USD only.
+
 ## POST /v1/payments/refund
 - Request body:
 ```
