@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..db import SessionLocal
-from ..models import Customer, Subscription, Invoice, InvoiceItem, Usage, EventOutbox, ProviderEvent
+from ..models import Customer, Subscription, Invoice, InvoiceItem, Usage, EventOutbox, ProviderEvent, StripePriceMapping
 from ..plans.service import utc8_day_start
 from ..config import settings
 
@@ -274,6 +274,57 @@ def process_stripe_invoice_webhook(headers: dict, body: bytes, request_id: str |
             "status": local_status,
             "handled": True,
         }
+
+
+# --- Stripe Price Mapping services ---
+
+def create_price_mapping(*, plan_id: int, stripe_price_id: str, currency: str = "USD", active: bool = True) -> StripePriceMapping:
+    with _session() as s:
+        m = StripePriceMapping(plan_id=plan_id, stripe_price_id=stripe_price_id, currency=currency.upper(), active=active)
+        s.add(m)
+        s.flush()
+        return m
+
+
+def update_price_mapping(mapping_id: int, *, stripe_price_id: str | None = None, currency: str | None = None, active: bool | None = None) -> StripePriceMapping:
+    with _session() as s:
+        m = s.get(StripePriceMapping, mapping_id)
+        if not m:
+            raise ValueError("price_mapping not found")
+        if stripe_price_id is not None:
+            m.stripe_price_id = stripe_price_id
+        if currency is not None:
+            m.currency = currency.upper()
+        if active is not None:
+            m.active = active
+        s.flush()
+        return m
+
+
+def delete_price_mapping(mapping_id: int) -> None:
+    with _session() as s:
+        m = s.get(StripePriceMapping, mapping_id)
+        if not m:
+            return
+        s.delete(m)
+        s.flush()
+
+
+def list_price_mappings(*, plan_id: int | None = None) -> list[StripePriceMapping]:
+    with _session() as s:
+        q = s.query(StripePriceMapping)
+        if plan_id is not None:
+            q = q.filter_by(plan_id=plan_id)
+        return list(q.order_by(StripePriceMapping.id.desc()).all())
+
+
+def get_active_price_for_plan(plan_id: int, *, currency: str | None = None) -> str | None:
+    with _session() as s:
+        q = s.query(StripePriceMapping).filter_by(plan_id=plan_id, active=True)
+        if currency:
+            q = q.filter(StripePriceMapping.currency == currency.upper())
+        m = q.order_by(StripePriceMapping.id.desc()).first()
+        return m.stripe_price_id if m else None
 
 
 def get_invoice(invoice_id: int) -> tuple[Invoice, list[InvoiceItem]]:

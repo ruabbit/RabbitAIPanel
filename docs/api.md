@@ -111,6 +111,11 @@ Notes:
 - `GET /v1/billing/subscriptions?customer_id=1&plan_id=2&limit=50&offset=0` → 列出订阅（可按 `customer_id` 与 `plan_id` 过滤），包含总数 `total`。
 - `GET /v1/billing/invoices/{invoice_id}` → 查询单个发票及其行项目。
 - `GET /v1/billing/invoices?customer_id=1&limit=50&offset=0` → 列出发票（可按 `customer_id` 过滤），包含总数 `total`。
+- 价格映射管理：
+  - `POST /v1/billing/stripe/price_mappings` Body: `{ plan_id, stripe_price_id, currency?, active? }`
+  - `PATCH /v1/billing/stripe/price_mappings/{mapping_id}` Body: `{ stripe_price_id?, currency?, active? }`
+  - `DELETE /v1/billing/stripe/price_mappings/{mapping_id}`
+  - `GET /v1/billing/stripe/price_mappings?plan_id=2`
 - Stripe（可选，若配置了 `STRIPE_SECRET_KEY`）
   - `POST /v1/billing/stripe/customers/ensure?customer_id=1` → 创建/确保 Stripe Customer；返回 `stripe_customer_id`
   - `POST /v1/billing/stripe/subscriptions/ensure` Body: `{ customer_id, plan_id, stripe_price_id }` → 创建/确保订阅；返回 `stripe_subscription_id`

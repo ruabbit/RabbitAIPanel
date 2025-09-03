@@ -12,6 +12,13 @@ from middleware.billing.service import (
     get_subscription_by_stripe_id,
     list_subscriptions,
 )
+from middleware.billing.service import (
+    create_price_mapping,
+    update_price_mapping,
+    delete_price_mapping,
+    list_price_mappings,
+    get_active_price_for_plan,
+)
 from middleware.plans.service import get_plan
 
 
@@ -224,11 +231,106 @@ def api_push_invoice(invoice_id: int, ctx: dict = Depends(dev_auth)):
 
 @router.post("/stripe/subscriptions/ensure_by_plan")
 def api_ensure_stripe_subscription_by_plan(customer_id: int, plan_id: int, ctx: dict = Depends(dev_auth)):
-    plan = get_plan(plan_id)
-    if not plan or not plan.meta or not plan.meta.get("stripe_price_id"):
-        raise HTTPException(status_code=400, detail="plan.meta.stripe_price_id missing")
     try:
-        sid = ensure_stripe_subscription(customer_id=customer_id, plan_id=plan_id, stripe_price_id=plan.meta["stripe_price_id"])
+        # 优先使用 DB 映射；若无则回退 plan.meta（兼容历史配置）
+        plan = get_plan(plan_id)
+        if not plan:
+            raise HTTPException(status_code=400, detail="plan not found")
+        stripe_price_id = get_active_price_for_plan(plan_id, currency=plan.currency) or (
+            plan.meta.get("stripe_price_id") if plan.meta else None
+        )
+        if not stripe_price_id:
+            raise HTTPException(status_code=400, detail="no stripe price mapping for plan")
+        sid = ensure_stripe_subscription(customer_id=customer_id, plan_id=plan_id, stripe_price_id=stripe_price_id)
         return {"request_id": ctx.get("request_id"), "stripe_subscription_id": sid}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# --- Stripe Price Mapping 管理 ---
+
+class PriceMappingBody(BaseModel):
+    plan_id: int
+    stripe_price_id: str
+    currency: str | None = None
+    active: bool | None = True
+
+
+@router.post("/stripe/price_mappings")
+def api_create_price_mapping(body: PriceMappingBody, ctx: dict = Depends(dev_auth)):
+    try:
+        m = create_price_mapping(
+            plan_id=body.plan_id,
+            stripe_price_id=body.stripe_price_id,
+            currency=(body.currency or "USD"),
+            active=(True if body.active is None else body.active),
+        )
+        return {
+            "request_id": ctx.get("request_id"),
+            "mapping": {
+                "id": m.id,
+                "plan_id": m.plan_id,
+                "currency": m.currency,
+                "stripe_price_id": m.stripe_price_id,
+                "active": m.active,
+                "created_at": m.created_at.isoformat(),
+            },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class PriceMappingUpdateBody(BaseModel):
+    stripe_price_id: str | None = None
+    currency: str | None = None
+    active: bool | None = None
+
+
+@router.patch("/stripe/price_mappings/{mapping_id}")
+def api_update_price_mapping(mapping_id: int, body: PriceMappingUpdateBody, ctx: dict = Depends(dev_auth)):
+    try:
+        m = update_price_mapping(mapping_id, stripe_price_id=body.stripe_price_id, currency=body.currency, active=body.active)
+        return {
+            "request_id": ctx.get("request_id"),
+            "mapping": {
+                "id": m.id,
+                "plan_id": m.plan_id,
+                "currency": m.currency,
+                "stripe_price_id": m.stripe_price_id,
+                "active": m.active,
+                "created_at": m.created_at.isoformat(),
+            },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/stripe/price_mappings/{mapping_id}")
+def api_delete_price_mapping(mapping_id: int, ctx: dict = Depends(dev_auth)):
+    try:
+        delete_price_mapping(mapping_id)
+        return {"request_id": ctx.get("request_id"), "ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/stripe/price_mappings")
+def api_list_price_mappings(plan_id: int | None = Query(None), ctx: dict = Depends(dev_auth)):
+    try:
+        rows = list_price_mappings(plan_id=plan_id)
+        return {
+            "request_id": ctx.get("request_id"),
+            "mappings": [
+                {
+                    "id": m.id,
+                    "plan_id": m.plan_id,
+                    "currency": m.currency,
+                    "stripe_price_id": m.stripe_price_id,
+                    "active": m.active,
+                    "created_at": m.created_at.isoformat(),
+                }
+                for m in rows
+            ],
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

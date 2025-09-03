@@ -289,3 +289,13 @@ class EventOutbox(Base):
     next_attempt_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
     last_error: Mapped[Optional[str]] = mapped_column(String(512))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class StripePriceMapping(Base):
+    __tablename__ = "stripe_price_mappings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"))
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    stripe_price_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
