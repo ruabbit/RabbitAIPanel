@@ -4,10 +4,12 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from sqlalchemy.orm import Session
+import logging
 
 from .db import SessionLocal
 from .models import Wallet, LedgerEntry, User
 
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def session_scope() -> Iterator[Session]:
@@ -35,6 +37,13 @@ def credit_wallet(user_id: int, currency: str, amount_cents: int, reason: str, m
         wallet.balance_cents += amount_cents
         entry = LedgerEntry(wallet_id=wallet.id, amount_cents=amount_cents, currency=currency, reason=reason, meta=meta or {})
         s.add(entry)
+        logger.info(
+            "wallet.credit user_id=%s currency=%s amount_cents=%s wallet_id=%s",
+            user_id,
+            currency,
+            amount_cents,
+            wallet.id,
+        )
 
 
 def debit_wallet(user_id: int, currency: str, amount_cents: int, reason: str, meta: dict | None = None) -> None:
@@ -51,3 +60,10 @@ def debit_wallet(user_id: int, currency: str, amount_cents: int, reason: str, me
         wallet.balance_cents -= amount_cents
         entry = LedgerEntry(wallet_id=wallet.id, amount_cents=-abs(amount_cents), currency=currency, reason=reason, meta=meta or {})
         s.add(entry)
+        logger.info(
+            "wallet.debit user_id=%s currency=%s amount_cents=%s wallet_id=%s",
+            user_id,
+            currency,
+            amount_cents,
+            wallet.id,
+        )

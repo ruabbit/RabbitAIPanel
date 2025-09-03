@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from sqlalchemy.orm import Session
+import logging
 
 from ..db import SessionLocal
 from ..models import Order, Payment, ProviderEvent, User, Refund
@@ -14,6 +15,7 @@ from .registry import provider_registry
 from .types import InitResult, PaymentEvent, RefundResult, PaymentStatus
 from .load_providers import load_default_providers
 
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def session_scope() -> Iterator[Session]:
@@ -54,6 +56,15 @@ def create_checkout(
         s.flush()  # get order.id
 
         init = provider.create_payment(order)
+        logger.info(
+            "service.checkout order_id=%s user_id=%s provider=%s amount_cents=%s currency=%s provider_txn_id=%s",
+            order_id,
+            user_id,
+            provider.name,
+            amount_cents,
+            currency.upper(),
+            init.provider_txn_id,
+        )
 
         payment = Payment(
             order_id=order.id,
@@ -71,6 +82,13 @@ def create_checkout(
 def process_webhook(*, provider_name: str, headers: dict, body: bytes) -> PaymentEvent:
     provider = provider_registry.get(provider_name)
     event = provider.handle_webhook(headers, body)
+    logger.info(
+        "service.webhook.received provider=%s event_type=%s order_id=%s provider_txn_id=%s",
+        provider.name,
+        getattr(event, "event_type", None),
+        getattr(event, "order_id", None),
+        getattr(event, "provider_txn_id", None),
+    )
 
     with session_scope() as s:
         # idempotency guard
@@ -80,11 +98,13 @@ def process_webhook(*, provider_name: str, headers: dict, body: bytes) -> Paymen
             s.flush()
         except Exception:
             # duplicate event id; safe to return existing event semantics
+            logger.info("service.webhook.duplicate provider=%s event_id=%s", provider.name, event.event_id or event.provider_txn_id)
             return event
 
         # Find the Order by external order_id
         order = s.query(Order).filter_by(order_id=event.order_id).first()
         if order is None:
+            logger.warning("service.webhook.no_order provider=%s order_id=%s", provider.name, event.order_id)
             return event
 
         payment = (
@@ -117,12 +137,21 @@ def process_webhook(*, provider_name: str, headers: dict, body: bytes) -> Paymen
             u = s.query(User).filter_by(id=order.user_id).first()
             litellm_user_id = u.litellm_user_id if u else None
             update_budget_for_user(litellm_user_id=litellm_user_id, max_budget_cents=None, budget_duration=None)
+            logger.info(
+                "service.webhook.succeeded provider=%s order_id=%s amount_cents=%s currency=%s",
+                provider.name,
+                order.order_id,
+                event.amount_cents,
+                event.currency,
+            )
         elif event.event_type == "payment_failed":
             payment.status = "failed"
             order.status = "failed"
+            logger.info("service.webhook.failed provider=%s order_id=%s", provider.name, order.order_id)
         elif event.event_type == "refunded":
             payment.status = "refunded"
             order.status = "refunded"
+            logger.info("service.webhook.refunded provider=%s order_id=%s", provider.name, order.order_id)
 
         return event
 
@@ -166,6 +195,13 @@ def refund_payment(*, provider_name: str, provider_txn_id: str | None = None, or
         order.status = "refunded"
         # debit wallet to keep ledger consistent
         debit_wallet(user_id=order.user_id, currency=payment.currency, amount_cents=refunded_amount, reason="refund", meta={"provider": provider.name, "order_id": order.order_id, "provider_refund_id": res.provider_refund_id})
+        logger.info(
+            "service.refund.ok provider=%s order_id=%s provider_txn_id=%s amount_cents=%s",
+            provider.name,
+            order.order_id,
+            payment.provider_txn_id,
+            refunded_amount,
+        )
         return res
 
 

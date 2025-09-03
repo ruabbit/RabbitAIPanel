@@ -18,6 +18,7 @@ from .wallets import router as wallets_router
 
 
 app = FastAPI(title="RabbitAIPanel Middleware API", version="0.1.0")
+logger = logging.getLogger(__name__)
 
 
 @app.on_event("startup")
@@ -79,6 +80,14 @@ def api_checkout(body: CheckoutBody, ctx: dict = Depends(dev_auth)):
             amount_cents=body.amount_cents,
             currency=body.currency.upper(),
         )
+        logger.info(
+            "checkout.created provider=%s order_id=%s user_id=%s amount_cents=%s currency=%s",
+            body.provider,
+            order_id,
+            user_id,
+            body.amount_cents,
+            body.currency.upper(),
+        )
         return {
             "order_id": order_id,
             "type": init.type,
@@ -86,6 +95,7 @@ def api_checkout(body: CheckoutBody, ctx: dict = Depends(dev_auth)):
             "provider_txn_id": init.provider_txn_id,
         }
     except Exception as e:
+        logger.warning("checkout.error order_id=%s err=%s", order_id, e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -96,7 +106,9 @@ async def stripe_webhook(request: Request):
     try:
         event = process_webhook(provider_name="stripe", headers=headers, body=body)
     except Exception as e:
+        logger.warning("webhook.error provider=stripe err=%s", e)
         raise HTTPException(status_code=400, detail=str(e))
+    logger.info("webhook.handled provider=stripe event_type=%s order_id=%s", event.event_type, event.order_id)
     return {"ok": True, "event_type": event.event_type, "order_id": event.order_id}
 
 
@@ -120,8 +132,22 @@ def api_refund(body: RefundBody, _: bool = Depends(dev_auth)):
         )
         if not res.ok:
             raise HTTPException(status_code=400, detail=res.error or "refund failed")
+        logger.info(
+            "refund.ok provider=%s order_id=%s provider_txn_id=%s amount_cents=%s",
+            body.provider,
+            body.order_id,
+            body.provider_txn_id,
+            body.amount_cents,
+        )
         return {"ok": True, "provider_refund_id": res.provider_refund_id}
     except Exception as e:
+        logger.warning(
+            "refund.error provider=%s order_id=%s provider_txn_id=%s err=%s",
+            body.provider,
+            body.order_id,
+            body.provider_txn_id,
+            e,
+        )
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -134,8 +160,23 @@ def api_status(
 ):
     try:
         data = get_payment_status(provider_name=provider, provider_txn_id=provider_txn_id, order_id=order_id)
+        logger.info(
+            "status.query provider=%s order_id=%s provider_txn_id=%s local_status=%s provider_status=%s",
+            provider,
+            order_id,
+            provider_txn_id,
+            (data.get("local") or {}).get("payment_status"),
+            (data.get("provider") or {}).get("status"),
+        )
         return data
     except Exception as e:
+        logger.warning(
+            "status.error provider=%s order_id=%s provider_txn_id=%s err=%s",
+            provider,
+            order_id,
+            provider_txn_id,
+            e,
+        )
         raise HTTPException(status_code=400, detail=str(e))
 
 
