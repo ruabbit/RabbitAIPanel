@@ -69,6 +69,11 @@ This milestone (M1) delivers the plugin framework and data layer.
 - INFO-level logs around checkout, webhooks, refunds, status queries, and wallet operations.
 - Log keys include: `request_id`, `order_id`, `provider`, `amount_cents`, `currency`.
 
+## Docs
+- API draft: `docs/api.md`
+- Implementation plan: `docs/implementation_plan.md`
+- Billing & Lago integration: `docs/billing_and_lago.md`
+
 ## Roadmap
 - M1: Plugin framework + models + provider skeletons
 - M2 (Stripe-first): Recharge flow using Stripe (Payment Element/Checkout). Alipay supported via Stripe payment methods. Webhooks, wallet crediting, Lago sync, LiteLLM budget linkage.

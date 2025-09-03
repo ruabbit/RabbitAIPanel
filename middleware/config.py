@@ -21,6 +21,9 @@ class Settings:
     LAGO_API_URL: str | None = os.getenv("LAGO_API_URL")
     LAGO_API_KEY: str | None = os.getenv("LAGO_API_KEY")
     LAGO_CREDIT_ENDPOINT: str = os.getenv("LAGO_CREDIT_ENDPOINT", "/credits")
+    LAGO_EVENTS_ENABLED: bool = os.getenv("LAGO_EVENTS_ENABLED", "0") in ("1", "true", "True")
+    LAGO_PAYMENTS_ENDPOINT: str = os.getenv("LAGO_PAYMENTS_ENDPOINT", "/events/payment")
+    LAGO_USAGE_ENDPOINT: str = os.getenv("LAGO_USAGE_ENDPOINT", "/events/usage")
 
     # litellm
     LITELLM_BASE_URL: str | None = os.getenv("LITELLM_BASE_URL")
