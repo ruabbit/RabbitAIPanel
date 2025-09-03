@@ -1,7 +1,7 @@
 # API (Draft)
 
 ## Conventions
-- Request ID: The API accepts optional `X-Request-ID` header. If missing, a new ID is generated. All responses include `X-Request-ID` and server logs carry this value for correlation.
+- Request ID: The API accepts optional `X-Request-ID` header. If missing, a new ID is generated. All responses include `X-Request-ID` and server logs carry this value for correlation. In addition, selected endpoints include `request_id` in the JSON body: checkout, refund, status, wallets, ledger, Stripe config, healthz, webhook, and root.
 - Dev Auth: For non-webhook endpoints, include `x-api-key: $DEV_API_KEY`.
 
 ## GET /v1/config/stripe
@@ -9,7 +9,7 @@
 
 Response JSON:
 ```
-{ "publishable_key": "pk_test_..." }
+{ "publishable_key": "pk_test_...", "request_id": "..." }
 ```
 
 ## POST /v1/payments/checkout
@@ -29,6 +29,7 @@ Request JSON:
 Response JSON:
 ```
 {
+  "request_id": "...",
   "order_id": "ORD-...",
   "type": "client_secret",
   "payload": { "client_secret": "...", "order_id": "...", "amount_cents": 1000, "currency": "USD" },
@@ -41,7 +42,7 @@ Response JSON:
 
 Response JSON:
 ```
-{ "ok": true, "event_type": "payment_succeeded", "order_id": "ORD-..." }
+{ "ok": true, "request_id": "...", "event_type": "payment_succeeded", "order_id": "ORD-..." }
 ```
 
 ## GET /healthz
@@ -72,7 +73,7 @@ Notes:
 ```
 Response:
 ```
-{ "ok": true, "provider_refund_id": "re_..." }
+{ "ok": true, "request_id": "...", "provider_refund_id": "re_..." }
 ```
 
 ## GET /v1/payments/status
@@ -80,6 +81,7 @@ Response:
 - Response:
 ```
 {
+  "request_id": "...",
   "local": { "order_status": "succeeded", "payment_status": "succeeded", "order_id": "ORD-...", "provider_txn_id": "pi_..." },
   "provider": { "status": "succeeded", "amount_cents": 1000, "currency": "USD", "provider_txn_id": "pi_..." }
 }
@@ -89,6 +91,7 @@ Response:
 - Returns per-currency balances for a user
 ```
 {
+  "request_id": "...",
   "user_id": 1,
   "wallets": [ { "currency": "USD", "balance_cents": 1000 } ]
 }
@@ -98,6 +101,7 @@ Response:
 - Returns recent ledger entries (credits/debits)
 ```
 {
+  "request_id": "...",
   "user_id": 1,
   "entries": [ { "amount_cents": 1000, "currency": "USD", "reason": "recharge", "created_at": "...", "meta": {"provider": "stripe"}} ]
 }

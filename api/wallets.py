@@ -28,6 +28,7 @@ def get_wallets(user_id: int, ctx: dict = Depends(dev_auth), db: Session = Depen
     rows = db.query(Wallet).filter_by(user_id=user_id).all()
     logger.info("wallet.query request_id=%s user_id=%s count=%s", ctx.get("request_id"), user_id, len(rows))
     return {
+        "request_id": ctx.get("request_id"),
         "user_id": user_id,
         "wallets": [
             {"currency": r.currency, "balance_cents": r.balance_cents, "low_threshold_cents": r.low_threshold_cents}
@@ -48,6 +49,7 @@ def get_ledger(user_id: int, limit: int = Query(20, gt=0, le=200), ctx: dict = D
     )
     logger.info("wallet.ledger request_id=%s user_id=%s limit=%s returned=%s", ctx.get("request_id"), user_id, limit, len(rows))
     return {
+        "request_id": ctx.get("request_id"),
         "user_id": user_id,
         "entries": [
             {

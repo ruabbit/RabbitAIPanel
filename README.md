@@ -55,11 +55,15 @@ This milestone (M1) delivers the plugin framework and data layer.
 ## Request ID
 - Incoming request may include `X-Request-ID`; if absent, the server generates one.
 - The server echoes `X-Request-ID` on every response and includes it in logs.
-- Use this to correlate client ↔ server logs and webhook traces.
+- Selected endpoints also include `request_id` in the JSON response (checkout, refund, status, wallets, ledger, config, healthz, webhook, root) for easier correlation.
 
 ## Environment (optional integrations)
 - Lago: `LAGO_API_URL`, `LAGO_API_KEY`
 - LiteLLM: `LITELLM_BASE_URL`, `LITELLM_MASTER_KEY`, `LITELLM_BUDGET_DURATION` (e.g. `30d`)
+  - Periodic budget sync (optional):
+    - `LITELLM_SYNC_ENABLED=1` to enable wallet→LiteLLM budget periodic sync.
+    - `LITELLM_SYNC_INTERVAL_SEC` sync frequency (default 900).
+    - `LITELLM_SYNC_CURRENCY` target currency code (default `USD`).
 
 ## Logging
 - INFO-level logs around checkout, webhooks, refunds, status queries, and wallet operations.

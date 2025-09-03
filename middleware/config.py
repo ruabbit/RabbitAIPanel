@@ -27,6 +27,10 @@ class Settings:
     LITELLM_MASTER_KEY: str | None = os.getenv("LITELLM_MASTER_KEY")
     LITELLM_BUDGET_LINKAGE: bool = os.getenv("LITELLM_BUDGET_LINKAGE", "0") in ("1", "true", "True")
     LITELLM_BUDGET_DURATION: str | None = os.getenv("LITELLM_BUDGET_DURATION")
+    # optional periodic sync from wallet -> LiteLLM budget
+    LITELLM_SYNC_ENABLED: bool = os.getenv("LITELLM_SYNC_ENABLED", "0") in ("1", "true", "True")
+    LITELLM_SYNC_INTERVAL_SEC: int = int(os.getenv("LITELLM_SYNC_INTERVAL_SEC", "900"))
+    LITELLM_SYNC_CURRENCY: str = os.getenv("LITELLM_SYNC_CURRENCY", "USD")
 
     # dev api auth
     DEV_API_KEY: str | None = os.getenv("DEV_API_KEY")

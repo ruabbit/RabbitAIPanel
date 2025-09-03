@@ -11,11 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uuid
 from pydantic import BaseModel, Field
+import asyncio
 
 from middleware.db import init_db
 from middleware.payments.service import create_checkout, process_webhook, refund_payment, get_payment_status
 from middleware.config import settings
 from .wallets import router as wallets_router
+from middleware.integrations.litellm_sync import sync_wallets_to_litellm
 
 
 app = FastAPI(title="RabbitAIPanel Middleware API", version="0.1.0")
@@ -28,6 +30,25 @@ def on_startup() -> None:
     init_db()
     # Setup logging baseline
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # Periodic LiteLLM budget sync
+    if settings.LITELLM_SYNC_ENABLED:
+        interval = max(60, int(settings.LITELLM_SYNC_INTERVAL_SEC))
+        currency = settings.LITELLM_SYNC_CURRENCY
+
+        async def _runner():
+            await asyncio.sleep(2)
+            try:
+                await asyncio.to_thread(sync_wallets_to_litellm, currency)
+            except Exception:
+                pass
+            while True:
+                await asyncio.sleep(interval)
+                try:
+                    await asyncio.to_thread(sync_wallets_to_litellm, currency)
+                except Exception:
+                    pass
+
+        asyncio.create_task(_runner())
 
 # CORS (dev)
 origins = [o.strip() for o in (os.getenv("DEV_CORS_ORIGINS", "*").split(","))]
@@ -65,6 +86,15 @@ def dev_auth(
     return ctx
 
 
+def request_context(
+    response: Response,
+    x_request_id: str | None = Header(default=None, alias="x-request-id"),
+):
+    request_id = (x_request_id or str(uuid.uuid4()))
+    response.headers["x-request-id"] = request_id
+    return {"request_id": request_id}
+
+
 class CheckoutBody(BaseModel):
     user_id: Optional[int] = None
     amount_cents: int = Field(gt=0)
@@ -97,6 +127,7 @@ def api_checkout(body: CheckoutBody, ctx: dict = Depends(dev_auth)):
             body.currency.upper(),
         )
         return {
+            "request_id": ctx.get("request_id"),
             "order_id": order_id,
             "type": init.type,
             "payload": init.payload,
@@ -120,7 +151,7 @@ async def stripe_webhook(request: Request, response: Response):
         logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
         raise HTTPException(status_code=400, detail=str(e))
     logger.info("webhook.handled request_id=%s provider=stripe event_type=%s order_id=%s", request_id, event.event_type, event.order_id)
-    return {"ok": True, "event_type": event.event_type, "order_id": event.order_id}
+    return {"ok": True, "request_id": request_id, "event_type": event.event_type, "order_id": event.order_id}
 
 
 class RefundBody(BaseModel):
@@ -151,7 +182,7 @@ def api_refund(body: RefundBody, ctx: dict = Depends(dev_auth)):
             body.provider_txn_id,
             body.amount_cents,
         )
-        return {"ok": True, "provider_refund_id": res.provider_refund_id}
+        return {"ok": True, "request_id": ctx.get("request_id"), "provider_refund_id": res.provider_refund_id}
     except Exception as e:
         logger.warning(
             "refund.error request_id=%s provider=%s order_id=%s provider_txn_id=%s err=%s",
@@ -182,7 +213,7 @@ def api_status(
             (data.get("local") or {}).get("payment_status"),
             (data.get("provider") or {}).get("status"),
         )
-        return data
+        return {**data, "request_id": ctx.get("request_id")}
     except Exception as e:
         logger.warning(
             "status.error request_id=%s provider=%s order_id=%s provider_txn_id=%s err=%s",
@@ -196,13 +227,13 @@ def api_status(
 
 
 @app.get("/healthz")
-def healthz():
-    return {"ok": True}
+def healthz(ctx: dict = Depends(request_context)):
+    return {"ok": True, "request_id": ctx.get("request_id")}
 
 
 @app.get("/")
-def root():
-    return {"ok": True, "service": "RabbitAIPanel Middleware API"}
+def root(ctx: dict = Depends(request_context)):
+    return {"ok": True, "service": "RabbitAIPanel Middleware API", "request_id": ctx.get("request_id")}
 
 
 @app.get("/demo/payment_element")
@@ -218,7 +249,7 @@ app.include_router(wallets_router)
 
 # Simple config endpoint to retrieve Stripe publishable key for frontend
 @app.get("/v1/config/stripe")
-def get_stripe_config():
+def get_stripe_config(ctx: dict = Depends(request_context)):
     if not settings.STRIPE_PUBLISHABLE_KEY:
         raise HTTPException(status_code=404, detail="stripe publishable key not configured")
-    return {"publishable_key": settings.STRIPE_PUBLISHABLE_KEY}
+    return {"publishable_key": settings.STRIPE_PUBLISHABLE_KEY, "request_id": ctx.get("request_id")}
