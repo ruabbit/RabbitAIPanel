@@ -25,10 +25,10 @@
 - `PlanAssignment`:
   - `entity_type` (`user`|`team`), `entity_id`, `plan_id`, `effective_from`, `effective_to`, `status`, `timezone`
 
-## Lago Event Endpoints (to be implemented on your Lago side)
-- For simplicity, we propose distinct endpoints with consistent payloads.
+## Lago Event Endpoints (built into this API)
+- Distinct endpoints with consistent payloads, hosted by this service.
 
-### POST {LAGO_API_URL}/events/payment
+### POST /lago/events/payment
 - Auth: `Authorization: Bearer {LAGO_API_KEY}`
 - Body:
 ```
@@ -46,7 +46,7 @@
 }
 ```
 
-### POST {LAGO_API_URL}/events/usage
+### POST /lago/events/usage
 - Auth: `Authorization: Bearer {LAGO_API_KEY}`
 - Body:
 ```

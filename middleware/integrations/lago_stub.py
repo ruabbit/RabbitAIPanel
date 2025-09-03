@@ -44,6 +44,13 @@ def record_payment(*, event_type: str, provider: str, provider_txn_id: str, orde
         "subject": {"user_id": user_id, "team_id": team_id},
         "meta": meta or {},
     }
+    # Prefer internal ingestion when available
+    try:
+        from ..lago.service import ingest_payment_event  # type: ignore
+        ingest_payment_event(payload)
+        return None
+    except Exception:
+        pass
     _post_json(settings.LAGO_PAYMENTS_ENDPOINT, payload)
 
 
@@ -63,6 +70,12 @@ def record_usage(*, usage_id: str, user_id: int | None, team_id: int | None, mod
         "success": success,
         "meta": meta or {},
     }
+    try:
+        from ..lago.service import ingest_usage_event  # type: ignore
+        ingest_usage_event(payload)
+        return None
+    except Exception:
+        pass
     _post_json(settings.LAGO_USAGE_ENDPOINT, payload)
     url = settings.LAGO_API_URL.rstrip("/") + settings.LAGO_CREDIT_ENDPOINT
     payload = {

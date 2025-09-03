@@ -19,6 +19,7 @@ from middleware.config import settings
 from .wallets import router as wallets_router
 from .plans import router as plans_router
 from .proxy import router as proxy_router
+from .lago import router as lago_router
 from middleware.integrations.litellm_sync import sync_wallets_to_litellm
 
 
@@ -249,6 +250,7 @@ def demo_payment_element():
 app.include_router(wallets_router)
 app.include_router(plans_router)
 app.include_router(proxy_router)
+app.include_router(lago_router)
 
 
 # Simple config endpoint to retrieve Stripe publishable key for frontend
