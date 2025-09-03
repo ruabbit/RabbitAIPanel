@@ -25,6 +25,12 @@ def _post_json(endpoint: str, payload: dict) -> None:
         with urllib.request.urlopen(req, timeout=5) as resp:  # nosec - trusted URL from config
             _ = resp.read()
     except Exception:
+        # enqueue outbox for retry
+        try:
+            from ..billing.service import enqueue_http_post  # type: ignore
+            enqueue_http_post(endpoint=url, payload=payload)
+        except Exception:
+            pass
         return None
 
 

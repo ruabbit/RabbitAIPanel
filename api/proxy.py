@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from .server import dev_auth
 from middleware.config import settings
-from middleware.plans.service import estimate_cost_for_tokens, check_daily_limit, record_usage_row, get_daily_limit_status, record_overdraft_alert
+from middleware.plans.service import estimate_cost_for_tokens, check_daily_limit, record_usage_row, get_daily_limit_status, record_overdraft_alert, has_today_overdraft, get_degrade_fallback
 from middleware.integrations.lago_stub import record_usage
 
 
@@ -39,9 +39,16 @@ def proxy_chat(body: ChatBody, ctx: dict = Depends(dev_auth), x_litellm_api_key:
     if user_id <= 0:
         raise HTTPException(status_code=400, detail="user_id required (provide x-dev-user-id in dev mode)")
 
+    # Overdraft next-request strong gating (if enabled)
+    selected_model = body.model
+    if settings.OVERDRAFT_GATING_ENABLED and has_today_overdraft(user_id):
+        if settings.OVERDRAFT_GATING_MODE == "block":
+            raise HTTPException(status_code=403, detail="overdraft gating active (block)")
+        elif settings.OVERDRAFT_GATING_MODE == "degrade":
+            selected_model = get_degrade_fallback(body.model)
+
     # Estimate cost for gating (tokens unknown -> skip or use hints)
     est_cents = 0
-    selected_model = body.model
     if body.input_tokens is not None or body.output_tokens is not None:
         est_cents, _tz = estimate_cost_for_tokens(
             user_id,
@@ -55,7 +62,7 @@ def proxy_chat(body: ChatBody, ctx: dict = Depends(dev_auth), x_litellm_api_key:
             raise HTTPException(status_code=403, detail=f"daily limit exceeded: {reason}")
         if policy == "degrade" and est_cents > remaining:
             # simple hard-coded degrade mapping for demo
-            selected_model = settings.DEGRADE_DEFAULT_MODEL
+            selected_model = get_degrade_fallback(selected_model)
 
     # Forward request to LiteLLM
     url = settings.LITELLM_BASE_URL.rstrip("/") + "/chat/completions"

@@ -80,6 +80,14 @@ def get_plan(plan_id: int) -> Optional[Plan]:
         return s.get(Plan, plan_id)
 
 
+def update_plan_meta(plan_id: int, meta: dict) -> None:
+    with session_scope() as s:
+        p = s.get(Plan, plan_id)
+        if not p:
+            raise ValueError("plan not found")
+        p.meta = meta
+
+
 def get_assignment(entity_type: str, entity_id: int) -> Optional[PlanAssignment]:
     with session_scope() as s:
         return (
@@ -147,6 +155,35 @@ def estimate_cost_for_tokens(user_id: int, *, model: str, input_tokens: int, out
             return 0, None
         cents = estimate_token_cost_cents(pr, input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=total_tokens)
         return cents, pa.timezone
+
+
+def has_today_overdraft(user_id: int) -> bool:
+    with session_scope() as s:
+        start = utc8_day_start(hhmm="00:00")
+        q = s.query(OverdraftAlert).filter(OverdraftAlert.user_id == user_id, OverdraftAlert.created_at >= start)
+        return s.query(q.exists()).scalar() or False
+
+
+def _parse_degrade_mapping() -> list[tuple[str, str]]:
+    mapping: list[tuple[str, str]] = []
+    raw = settings.DEGRADE_MAPPING.strip()
+    if not raw:
+        return mapping
+    parts = [p.strip() for p in raw.split(",") if p.strip()]
+    for p in parts:
+        if "->" in p:
+            left, right = p.split("->", 1)
+            left, right = left.strip(), right.strip()
+            if left and right:
+                mapping.append((left, right))
+    return mapping
+
+
+def get_degrade_fallback(model: str) -> str:
+    for pat, fb in _parse_degrade_mapping():
+        if _match_pattern(model, pat):
+            return fb
+    return settings.DEGRADE_DEFAULT_MODEL
 
 
 def _today_spend_cents(session: Session, user_id: int, *, reset_time: str = "00:00") -> int:

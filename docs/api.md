@@ -38,7 +38,11 @@ Response JSON:
 ```
 
 ## POST /v1/webhooks/stripe
-- Stripe webhook endpoint. Verifies signature (if STRIPE_WEBHOOK_SECRET is set), normalizes events, updates order/payment, credits wallet, and triggers Lago / LiteLLM stubs.
+- Stripe webhook endpoint. Verifies signature (if `STRIPE_WEBHOOK_SECRET` is set).
+  - Payments: handles `payment_intent.succeeded|payment_intent.payment_failed|charge.refunded` → updates order/payment, credits wallet, and emits Lago events.
+  - Billing: handles `invoice.*` (e.g., `invoice.finalized|invoice.payment_succeeded|invoice.payment_failed|invoice.voided|invoice.marked_uncollectible`) → updates local `Invoice.status` (`draft|finalized|paid|failed`).
+  - Subscriptions: handles `customer.subscription.*` (created/updated/deleted). Maps Stripe status to local `Subscription.status`:
+    - Stripe `active|trialing` → `active`; `canceled|incomplete_expired` → `canceled`; `past_due|unpaid|incomplete` 或存在 `pause_collection` → `paused`。
 
 Response JSON:
 ```
@@ -91,14 +95,35 @@ Notes:
     - 若 upstream 返回 usage（OpenAI 格式），按 PriceRule 计算最终费用并记录 Usage；
       - `grace` 策略：仅对“未超限剩余额度”部分计费，溢出部分不计费（本阶段约定）。
       - 推送 Lago `/lago/events/usage`（如启用）。
+    - Overdraft gating（已实现）：当日（UTC+8）若发生过 block 策略的无 hints 透支，且 `OVERDRAFT_GATING_ENABLED=1`，后续请求按 `OVERDRAFT_GATING_MODE` 执行（`block` 直接拒绝；`degrade` 强制降级至配置的 fallback 模型）。
   - Responses:
     - 200 upstream JSON + `request_id`
     - 403 超出日限额（`block`）
+
+## Billing
+- `POST /v1/billing/customers` → 创建 Customer：`{ entity_type(user|team), entity_id, stripe_customer_id? }`
+- `POST /v1/billing/subscriptions` → 创建 Subscription：`{ customer_id, plan_id, stripe_subscription_id? }`
+- `POST /v1/billing/invoices/generate?customer_id=1&date_from=2025-09-01&date_to=2025-09-03` → 生成本地发票（聚合 Usage 为行项目），返回 `request_id` 与发票概要。
+- `GET /v1/billing/invoices/{invoice_id}` → 查询单个发票及其行项目。
+- `GET /v1/billing/invoices?customer_id=1&limit=50&offset=0` → 列出发票（可按 `customer_id` 过滤），包含总数 `total`。
+- `GET /v1/billing/subscriptions/{subscription_id}` → 查询单个订阅。
+- `GET /v1/billing/subscriptions/by_stripe/{stripe_subscription_id}` → 通过 Stripe ID 查询订阅。
+- `GET /v1/billing/subscriptions?customer_id=1&plan_id=2&limit=50&offset=0` → 列出订阅（可按 `customer_id` 与 `plan_id` 过滤），包含总数 `total`。
+- `GET /v1/billing/invoices/{invoice_id}` → 查询单个发票及其行项目。
+- `GET /v1/billing/invoices?customer_id=1&limit=50&offset=0` → 列出发票（可按 `customer_id` 过滤），包含总数 `total`。
+- Stripe（可选，若配置了 `STRIPE_SECRET_KEY`）
+  - `POST /v1/billing/stripe/customers/ensure?customer_id=1` → 创建/确保 Stripe Customer；返回 `stripe_customer_id`
+  - `POST /v1/billing/stripe/subscriptions/ensure` Body: `{ customer_id, plan_id, stripe_price_id }` → 创建/确保订阅；返回 `stripe_subscription_id`
+  - `POST /v1/billing/stripe/subscriptions/ensure_by_plan?customer_id=1&plan_id=1` → 读取 `plan.meta.stripe_price_id` 并确保订阅；返回 `stripe_subscription_id`
+  - `POST /v1/billing/stripe/invoices/push?invoice_id=1` → 将本地发票推送到 Stripe（创建 InvoiceItem 与 Invoice，尝试支付）；返回 `stripe_invoice_id`
 
 ## Reports
 - `GET /v1/reports/daily?user_id=1&date=2025-09-03` → 单日（UTC+8 窗口）聚合：`amount_cents`、`total_tokens`，返回 `request_id`。
 - `GET /v1/reports/summary?user_id=1&days=7` → 近 N 日（UTC+8 窗口）按日聚合：`amount_cents`、`total_tokens`，返回 `request_id` 与每日数组。
 - `GET /v1/reports/overdraft?user_id=1&days=7` → 近 N 日（UTC+8 窗口）溢出/透支事件列表（block 无 hints 情况会生成警报记录），返回 `request_id` 与事件详情。
+- `GET /v1/reports/period?user_id=1&date_from=2025-09-01&date_to=2025-09-03&format=json|csv` → 账期聚合（UTC+8 窗口）：
+  - 字段：`usage_amount_cents`、`usage_tokens`、`topup_cents`、`refunds_cents`、`net_topup_cents`、`balance_delta_cents`，返回 `request_id`。
+  - `format=csv` 返回 CSV（首行表头+一行数据）。
 
 ## POST /v1/payments/refund
 - Request body:

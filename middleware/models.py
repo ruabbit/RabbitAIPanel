@@ -227,3 +227,65 @@ class OverdraftAlert(Base):
     charged_amount_cents: Mapped[int] = mapped_column(BigInteger)
     remaining_before_cents: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+# -----------------------------
+# Billing: Customer/Subscription/Invoice
+# -----------------------------
+
+class Customer(Base):
+    __tablename__ = "customers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(16))  # user|team
+    entity_id: Mapped[int] = mapped_column(Integer)
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(128))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"))
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active|canceled|paused
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(String(128))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class Invoice(Base):
+    __tablename__ = "invoices"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
+    period_start: Mapped[dt.datetime] = mapped_column(DateTime)
+    period_end: Mapped[dt.datetime] = mapped_column(DateTime)
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    total_amount_cents: Mapped[int] = mapped_column(BigInteger, default=0)
+    status: Mapped[str] = mapped_column(String(16), default="draft")  # draft|finalized|paid|failed
+    stripe_invoice_id: Mapped[Optional[str]] = mapped_column(String(128))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class InvoiceItem(Base):
+    __tablename__ = "invoice_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    invoice_id: Mapped[int] = mapped_column(ForeignKey("invoices.id"))
+    description: Mapped[str] = mapped_column(String(256))
+    amount_cents: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+# -----------------------------
+# Outbox for retries
+# -----------------------------
+
+class EventOutbox(Base):
+    __tablename__ = "event_outbox"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[Optional[dict]] = mapped_column(SQLITE_JSON)
+    endpoint: Mapped[Optional[str]] = mapped_column(String(256))
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending|sent|failed
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_attempt_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime)
+    last_error: Mapped[Optional[str]] = mapped_column(String(512))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)

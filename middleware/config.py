@@ -36,6 +36,11 @@ class Settings:
     LITELLM_SYNC_CURRENCY: str = os.getenv("LITELLM_SYNC_CURRENCY", "USD")
     # degrade default (demo): fallback model when policy=degrade and overflow
     DEGRADE_DEFAULT_MODEL: str = os.getenv("DEGRADE_DEFAULT_MODEL", "gpt-4o-mini")
+    # overdraft next-request strong gating
+    OVERDRAFT_GATING_ENABLED: bool = os.getenv("OVERDRAFT_GATING_ENABLED", "0") in ("1", "true", "True")
+    OVERDRAFT_GATING_MODE: str = os.getenv("OVERDRAFT_GATING_MODE", "block")  # block|degrade
+    # configurable degrade mapping: "pattern->fallback,pattern2->fallback2"
+    DEGRADE_MAPPING: str = os.getenv("DEGRADE_MAPPING", "")
 
     # dev api auth
     DEV_API_KEY: str | None = os.getenv("DEV_API_KEY")

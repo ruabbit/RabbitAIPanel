@@ -24,11 +24,16 @@ class CreatePlanBody(BaseModel):
     name: str
     type: str = Field(pattern=r"^(daily_limit|usage)$")
     currency: str = "USD"
+    meta: dict | None = None
 
 
 @router.post("")
 def api_create_plan(body: CreatePlanBody, ctx: dict = Depends(dev_auth)):
     p = create_plan(name=body.name, type=body.type, currency=body.currency)
+    # optional meta save
+    if body.meta is not None:
+        from middleware.plans.service import update_plan_meta  # lazy import to avoid cycle
+        update_plan_meta(p.id, body.meta)
     return {"request_id": ctx.get("request_id"), "plan_id": p.id}
 
 
@@ -109,6 +114,19 @@ def api_assign_plan(body: AssignPlanBody, ctx: dict = Depends(dev_auth)):
     return {"request_id": ctx.get("request_id"), "assignment_id": pa.id}
 
 
+class UpdatePlanMetaBody(BaseModel):
+    plan_id: int
+    meta: dict
+
+
+@router.post("/meta")
+def api_update_plan_meta(body: UpdatePlanMetaBody, ctx: dict = Depends(dev_auth)):
+    from middleware.plans.service import update_plan_meta
+
+    update_plan_meta(body.plan_id, body.meta)
+    return {"request_id": ctx.get("request_id"), "plan_id": body.plan_id}
+
+
 @router.get("/{plan_id}")
 def api_get_plan(plan_id: int, ctx: dict = Depends(dev_auth)):
     p = get_plan(plan_id)
@@ -123,4 +141,3 @@ def api_get_assignment(entity_type: str, entity_id: int, ctx: dict = Depends(dev
     if not pa:
         return {"request_id": ctx.get("request_id"), "assignment": None}
     return {"request_id": ctx.get("request_id"), "assignment": {"id": pa.id, "plan_id": pa.plan_id, "status": pa.status, "effective_from": pa.effective_from.isoformat() if pa.effective_from else None, "effective_to": pa.effective_to.isoformat() if pa.effective_to else None, "timezone": pa.timezone}}
-

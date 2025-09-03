@@ -4,12 +4,14 @@ import datetime as dt
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from .server import request_context
 from middleware.db import SessionLocal
 from middleware.models import Usage, OverdraftAlert
+from middleware.lago.service import LagoPayment
 from middleware.plans.service import utc8_day_start
 
 
@@ -84,3 +86,84 @@ def overdraft_report(user_id: int, days: int = 7, ctx: dict = Depends(request_co
             for r in rows
         ]
     return {"request_id": ctx.get("request_id"), "user_id": user_id, "days": days, "overdrafts": data}
+
+
+@router.get("/period")
+def period_report(
+    user_id: int,
+    date_from: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
+    date_to: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
+    format: str = Query("json", pattern=r"^(json|csv)$"),
+    ctx: dict = Depends(request_context),
+):
+    # parse dates
+    try:
+        y1, m1, d1 = map(int, date_from.split("-"))
+        y2, m2, d2 = map(int, date_to.split("-"))
+        base_from = dt.datetime(y1, m1, d1)
+        base_to = dt.datetime(y2, m2, d2)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid date format")
+    if base_to < base_from:
+        raise HTTPException(status_code=400, detail="date_to must be >= date_from")
+    start = utc8_day_start(base_from, hhmm="00:00")
+    end = utc8_day_start(base_to, hhmm="00:00") + dt.timedelta(days=1)
+
+    with _session() as s:
+        usage_amount_cents, usage_tokens = s.query(
+            func.coalesce(func.sum(Usage.computed_amount_cents), 0),
+            func.coalesce(func.sum(Usage.total_tokens), 0),
+        ).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end).one()
+
+        topup = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
+            LagoPayment.user_id == user_id,
+            LagoPayment.created_at >= start,
+            LagoPayment.created_at < end,
+            LagoPayment.event_type == "wallet_topup",
+            LagoPayment.status == "succeeded",
+        ).scalar() or 0
+
+        refunds = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
+            LagoPayment.user_id == user_id,
+            LagoPayment.created_at >= start,
+            LagoPayment.created_at < end,
+            LagoPayment.event_type == "refund",
+        ).scalar() or 0
+
+    net_topup_cents = int(topup) - int(refunds)
+    usage_amount_cents = int(usage_amount_cents)
+    usage_tokens = int(usage_tokens)
+    balance_delta_cents = net_topup_cents - usage_amount_cents
+
+    data = {
+        "request_id": ctx.get("request_id"),
+        "user_id": user_id,
+        "from": date_from,
+        "to": date_to,
+        "usage_amount_cents": usage_amount_cents,
+        "usage_tokens": usage_tokens,
+        "topup_cents": int(topup),
+        "refunds_cents": int(refunds),
+        "net_topup_cents": net_topup_cents,
+        "balance_delta_cents": balance_delta_cents,
+    }
+
+    if format == "csv":
+        # simple CSV header + one row
+        headers = [
+            "request_id",
+            "user_id",
+            "from",
+            "to",
+            "usage_amount_cents",
+            "usage_tokens",
+            "topup_cents",
+            "refunds_cents",
+            "net_topup_cents",
+            "balance_delta_cents",
+        ]
+        row = [str(data[k]) for k in headers]
+        csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
+        return PlainTextResponse(content=csv_text, media_type="text/csv")
+
+    return data

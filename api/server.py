@@ -10,18 +10,22 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uuid
+import json
 from pydantic import BaseModel, Field
 import asyncio
 
 from middleware.db import init_db
 from middleware.payments.service import create_checkout, process_webhook, refund_payment, get_payment_status
+from middleware.billing.service import process_stripe_invoice_webhook, process_stripe_subscription_webhook
 from middleware.config import settings
 from .wallets import router as wallets_router
 from .plans import router as plans_router
 from .proxy import router as proxy_router
 from .lago import router as lago_router
 from .reports import router as reports_router
+from .billing import router as billing_router
 from middleware.integrations.litellm_sync import sync_wallets_to_litellm
+from middleware.billing.service import process_outbox_once
 
 
 app = FastAPI(title="RabbitAIPanel Middleware API", version="0.1.0")
@@ -53,6 +57,18 @@ def on_startup() -> None:
                     pass
 
         asyncio.create_task(_runner())
+    
+    # Outbox retry worker (security/resilience)
+    async def _outbox_worker():
+        await asyncio.sleep(1)
+        while True:
+            try:
+                await asyncio.to_thread(process_outbox_once, 20)
+            except Exception:
+                pass
+            await asyncio.sleep(10)
+
+    asyncio.create_task(_outbox_worker())
 
 # CORS (dev)
 origins = [o.strip() for o in (os.getenv("DEV_CORS_ORIGINS", "*").split(","))]
@@ -149,13 +165,69 @@ async def stripe_webhook(request: Request, response: Response):
     # request id propagation for webhooks
     request_id = headers.get("x-request-id") or str(uuid.uuid4())
     response.headers["x-request-id"] = request_id
+    # Route invoice.* events to billing handler; others go to payment handler
+    is_invoice_event = False
+    is_subscription_event = False
     try:
-        event = process_webhook(provider_name="stripe", headers=headers, body=body, request_id=request_id)
-    except Exception as e:
-        logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
-        raise HTTPException(status_code=400, detail=str(e))
-    logger.info("webhook.handled request_id=%s provider=stripe event_type=%s order_id=%s", request_id, event.event_type, event.order_id)
-    return {"ok": True, "request_id": request_id, "event_type": event.event_type, "order_id": event.order_id}
+        parsed = json.loads(body.decode("utf-8")) if body else {}
+        evt_type = (parsed or {}).get("type")
+        is_invoice_event = isinstance(evt_type, str) and evt_type.startswith("invoice.")
+        is_subscription_event = isinstance(evt_type, str) and evt_type.startswith("customer.subscription.")
+    except Exception:
+        is_invoice_event = False
+        is_subscription_event = False
+
+    if is_subscription_event:
+        try:
+            result = process_stripe_subscription_webhook(headers=headers, body=body, request_id=request_id)
+            logger.info(
+                "webhook.handled request_id=%s provider=stripe event_type=%s stripe_subscription_id=%s",
+                request_id,
+                result.get("event_type"),
+                result.get("stripe_subscription_id"),
+            )
+            return {
+                "ok": True,
+                "request_id": request_id,
+                "event_type": result.get("event_type"),
+                "stripe_subscription_id": result.get("stripe_subscription_id"),
+                "status": result.get("status"),
+            }
+        except Exception as e:
+            logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
+            raise HTTPException(status_code=400, detail=str(e))
+    elif is_invoice_event:
+        try:
+            result = process_stripe_invoice_webhook(headers=headers, body=body, request_id=request_id)
+            logger.info(
+                "webhook.handled request_id=%s provider=stripe event_type=%s stripe_invoice_id=%s",
+                request_id,
+                result.get("event_type"),
+                result.get("stripe_invoice_id"),
+            )
+            return {
+                "ok": True,
+                "request_id": request_id,
+                "event_type": result.get("event_type"),
+                "stripe_invoice_id": result.get("stripe_invoice_id"),
+                "status": result.get("status"),
+            }
+        except Exception as e:
+            logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
+            raise HTTPException(status_code=400, detail=str(e))
+    else:
+        try:
+            event = process_webhook(provider_name="stripe", headers=headers, body=body, request_id=request_id)
+        except Exception as e:
+            logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
+            raise HTTPException(status_code=400, detail=str(e))
+        logger.info(
+            "webhook.handled request_id=%s provider=stripe event_type=%s order_id=%s",
+            request_id,
+            event.event_type,
+            event.order_id,
+        )
+        return {"ok": True, "request_id": request_id, "event_type": event.event_type, "order_id": event.order_id}
 
 
 class RefundBody(BaseModel):
@@ -253,6 +325,7 @@ app.include_router(plans_router)
 app.include_router(proxy_router)
 app.include_router(lago_router)
 app.include_router(reports_router)
+app.include_router(billing_router)
 
 
 # Simple config endpoint to retrieve Stripe publishable key for frontend

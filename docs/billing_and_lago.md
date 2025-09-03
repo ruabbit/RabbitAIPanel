@@ -80,3 +80,31 @@
 - All currency fields use cents; currency is `USD` initially.
 - `request_id` is propagated for end-to-end traceability.
 - Prices are computed using local `PriceRule` and included in Usage events; Lago can recompute or override if needed.
+
+## Implemented Controls & Config
+- Next-request strong gating after overdraft（已实现）
+  - 当出现 `block` 策略且无 token hints 导致的透支（overdraft）后，对同日 UTC+8 窗口中的后续请求启用强门禁：
+    - `OVERDRAFT_GATING_ENABLED=1` 开启；
+    - `OVERDRAFT_GATING_MODE=block|degrade` 控制后续请求的处理策略；
+    - `block`：直接 403；`degrade`：强制降级到 fallback 模型（见下）。
+- Configurable degrade mapping（已实现基础）
+  - 通过环境变量配置映射与默认回退：
+    - `DEGRADE_DEFAULT_MODEL`（默认 `gpt-4o-mini`）
+    - `DEGRADE_MAPPING`（例如：`gpt-4o->gpt-4o-mini,gpt-4*->gpt-4o-mini`）
+
+## Future Iterations (Roadmap)
+- Configurable degrade mapping via API/DB（可配置降级映射）
+  - 需求：在 Plans 管理下新增映射资源（`model_pattern -> fallback_model`），支持 CRUD；代理层读取并缓存。
+  - 目的：替代或覆盖 `DEGRADE_MAPPING` 环境变量，支持多环境快速配置。
+- Team 维度与报表
+  - 聚合 usage/payment 到 team 层，提供日度/账期报表与导出（JSON/CSV），支持 user/team 组合视图。
+- Multi-modal 定价扩展
+  - 按 unit=request/minute/image 定义 PriceRule 计算；对图像/音频等类型扩展计价字段（如张数/分钟数）。
+- Invoices & Subscriptions（发票/订阅扣费）
+  - 模型：Customer（与 user/team 绑定）、Subscription（关联 Plan/PriceRules）、Product/Price（Plan 映射）、Invoice（账期聚合行项目）
+  - 流程：账期结束 → 生成发票 → Stripe Billing 自动扣费（保存 PaymentMethod、Customer、Subscription/Invoice/PaymentIntent）；成功/失败 webhook（`/v1/webhooks/stripe` 处理 `invoice.*`）→ 回写发票状态（draft|finalized|paid|failed）、Credit Note（退款）
+  - 对齐：保留 `/lago/events/*` 供事件驱动的账单与对账；本服务暴露发票/订阅 API 并与 Stripe/LiteLLM 联动
+- 安全与弹性
+  - 事件重试/退避（指数退避）、死信队列；请求幂等；
+  - 限流/并发/DoS 保护；机密管理（key 加密、轮换）；
+  - 观测：结构化日志、请求耗时、trace（request_id/trace_id）；审计日志；

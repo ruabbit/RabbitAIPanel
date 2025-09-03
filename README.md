@@ -66,6 +66,11 @@ This milestone (M1) delivers the plugin framework and data layer.
     - `LITELLM_SYNC_CURRENCY` target currency code (default `USD`).
   - Degrade default (demo):
     - `DEGRADE_DEFAULT_MODEL` (default `gpt-4o-mini`).
+  - Overdraft gating:
+    - `OVERDRAFT_GATING_ENABLED=1` to enable next-request strong gating after overdraft (UTC+8 day window)
+    - `OVERDRAFT_GATING_MODE=block|degrade` (default `block`)
+  - Configurable degrade mapping:
+    - `DEGRADE_MAPPING` (e.g., `gpt-4o->gpt-4o-mini,gpt-4*->gpt-4o-mini`)
 
 ## Logging
 - INFO-level logs around checkout, webhooks, refunds, status queries, and wallet operations.
