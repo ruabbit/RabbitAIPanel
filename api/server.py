@@ -146,7 +146,7 @@ async def stripe_webhook(request: Request, response: Response):
     request_id = headers.get("x-request-id") or str(uuid.uuid4())
     response.headers["x-request-id"] = request_id
     try:
-        event = process_webhook(provider_name="stripe", headers=headers, body=body)
+        event = process_webhook(provider_name="stripe", headers=headers, body=body, request_id=request_id)
     except Exception as e:
         logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
         raise HTTPException(status_code=400, detail=str(e))

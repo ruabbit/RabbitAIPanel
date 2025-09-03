@@ -9,7 +9,7 @@ import logging
 from ..db import SessionLocal
 from ..models import Order, Payment, ProviderEvent, User, Refund
 from ..wallets import credit_wallet, debit_wallet
-from ..integrations.lago_stub import record_credit
+from ..integrations.lago_stub import record_credit, record_payment
 from ..integrations.litellm_stub import update_budget_for_user
 from .registry import provider_registry
 from .types import InitResult, PaymentEvent, RefundResult, PaymentStatus
@@ -79,7 +79,7 @@ def create_checkout(
         return init
 
 
-def process_webhook(*, provider_name: str, headers: dict, body: bytes) -> PaymentEvent:
+def process_webhook(*, provider_name: str, headers: dict, body: bytes, request_id: str | None = None) -> PaymentEvent:
     provider = provider_registry.get(provider_name)
     event = provider.handle_webhook(headers, body)
     logger.info(
@@ -133,6 +133,11 @@ def process_webhook(*, provider_name: str, headers: dict, body: bytes) -> Paymen
             credit_wallet(user_id=order.user_id, currency=event.currency, amount_cents=event.amount_cents, reason="recharge", meta={"provider": provider.name, "order_id": order.order_id})
             # Record credit in Lago (stub)
             record_credit(user_id=order.user_id, currency=event.currency, amount_cents=event.amount_cents, order_id=order.order_id)
+            # Emit payment event to Lago (wallet_topup)
+            try:
+                record_payment(event_type="wallet_topup", provider=provider.name, provider_txn_id=(event.provider_txn_id or ""), order_id=order.order_id, amount_cents=event.amount_cents, currency=event.currency, user_id=order.user_id, team_id=None, status="succeeded", request_id=request_id, meta={})
+            except Exception:
+                pass
             # Update LiteLLM budgets for the user (stub – decide policy later)
             u = s.query(User).filter_by(id=order.user_id).first()
             litellm_user_id = u.litellm_user_id if u else None
@@ -152,6 +157,10 @@ def process_webhook(*, provider_name: str, headers: dict, body: bytes) -> Paymen
             payment.status = "refunded"
             order.status = "refunded"
             logger.info("service.webhook.refunded provider=%s order_id=%s", provider.name, order.order_id)
+            try:
+                record_payment(event_type="refund", provider=provider.name, provider_txn_id=(event.provider_txn_id or ""), order_id=order.order_id, amount_cents=event.amount_cents, currency=event.currency, user_id=order.user_id, team_id=None, status="refunded", request_id=request_id, meta={})
+            except Exception:
+                pass
 
         return event
 
