@@ -9,7 +9,7 @@ from sqlalchemy import func
 
 from .server import request_context
 from middleware.db import SessionLocal
-from middleware.models import Usage
+from middleware.models import Usage, OverdraftAlert
 from middleware.plans.service import utc8_day_start
 
 
@@ -59,3 +59,28 @@ def summary_report(user_id: int, days: int = 7, ctx: dict = Depends(request_cont
     results.sort(key=lambda x: x["date"])  # ascending
     return {"request_id": ctx.get("request_id"), "user_id": user_id, "days": days, "daily": results}
 
+
+@router.get("/overdraft")
+def overdraft_report(user_id: int, days: int = 7, ctx: dict = Depends(request_context)):
+    days = max(1, min(days, 90))
+    start = utc8_day_start(dt.datetime.utcnow() - dt.timedelta(days=days - 1), hhmm="00:00")
+    with _session() as s:
+        rows = (
+            s.query(OverdraftAlert)
+            .filter(OverdraftAlert.user_id == user_id, OverdraftAlert.created_at >= start)
+            .order_by(OverdraftAlert.id.desc())
+            .all()
+        )
+        data = [
+            {
+                "created_at": r.created_at.isoformat(),
+                "model": r.model,
+                "request_id": r.request_id,
+                "overflow_policy": r.overflow_policy,
+                "final_amount_cents": r.final_amount_cents,
+                "charged_amount_cents": r.charged_amount_cents,
+                "remaining_before_cents": r.remaining_before_cents,
+            }
+            for r in rows
+        ]
+    return {"request_id": ctx.get("request_id"), "user_id": user_id, "days": days, "overdrafts": data}

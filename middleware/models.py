@@ -214,3 +214,16 @@ class Usage(Base):
     success: Mapped[bool] = mapped_column(Boolean, default=True)
     request_id: Mapped[Optional[str]] = mapped_column(String(64))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+
+class OverdraftAlert(Base):
+    __tablename__ = "overdraft_alerts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    model: Mapped[str] = mapped_column(String(128))
+    request_id: Mapped[Optional[str]] = mapped_column(String(64))
+    overflow_policy: Mapped[str] = mapped_column(String(16))
+    final_amount_cents: Mapped[int] = mapped_column(BigInteger)
+    charged_amount_cents: Mapped[int] = mapped_column(BigInteger)
+    remaining_before_cents: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)

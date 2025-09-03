@@ -7,7 +7,7 @@ from typing import Iterator, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from ..db import SessionLocal
-from ..models import Plan, DailyLimitPlan, UsagePlan, PriceRule, PlanAssignment, Usage
+from ..models import Plan, DailyLimitPlan, UsagePlan, PriceRule, PlanAssignment, Usage, OverdraftAlert
 from sqlalchemy import func
 
 
@@ -208,3 +208,17 @@ def record_usage_row(user_id: int, *, model: str, input_tokens: int, output_toke
             request_id=request_id,
         )
         s.add(u)
+
+
+def record_overdraft_alert(user_id: int, *, model: str, request_id: Optional[str], overflow_policy: str, final_amount_cents: int, charged_amount_cents: int, remaining_before_cents: int) -> None:
+    with session_scope() as s:
+        a = OverdraftAlert(
+            user_id=user_id,
+            model=model,
+            request_id=request_id,
+            overflow_policy=overflow_policy,
+            final_amount_cents=final_amount_cents,
+            charged_amount_cents=charged_amount_cents,
+            remaining_before_cents=remaining_before_cents,
+        )
+        s.add(a)

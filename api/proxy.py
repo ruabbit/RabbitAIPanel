@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from .server import dev_auth
 from middleware.config import settings
-from middleware.plans.service import estimate_cost_for_tokens, check_daily_limit, record_usage_row, get_daily_limit_status
+from middleware.plans.service import estimate_cost_for_tokens, check_daily_limit, record_usage_row, get_daily_limit_status, record_overdraft_alert
 from middleware.integrations.lago_stub import record_usage
 
 
@@ -103,6 +103,19 @@ def proxy_chat(body: ChatBody, ctx: dict = Depends(dev_auth), x_litellm_api_key:
         if dlp and dlp.overflow_policy == "block" and final_cents > remaining:
             overdraft = True
             charged_cents = max(0, min(final_cents, remaining))
+            # record overdraft alert for audit
+            try:
+                record_overdraft_alert(
+                    user_id=user_id,
+                    model=selected_model,
+                    request_id=ctx.get("request_id"),
+                    overflow_policy=dlp.overflow_policy,
+                    final_amount_cents=final_cents,
+                    charged_amount_cents=charged_cents,
+                    remaining_before_cents=remaining,
+                )
+            except Exception:
+                pass
         # Record locally for day-limit aggregation
         record_usage_row(user_id, model=selected_model, input_tokens=prompt_t, output_tokens=completion_t, total_tokens=total_t, computed_amount_cents=charged_cents, request_id=ctx.get("request_id"))
         # Push to Lago

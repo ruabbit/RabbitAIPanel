@@ -98,6 +98,7 @@ Notes:
 ## Reports
 - `GET /v1/reports/daily?user_id=1&date=2025-09-03` → 单日（UTC+8 窗口）聚合：`amount_cents`、`total_tokens`，返回 `request_id`。
 - `GET /v1/reports/summary?user_id=1&days=7` → 近 N 日（UTC+8 窗口）按日聚合：`amount_cents`、`total_tokens`，返回 `request_id` 与每日数组。
+- `GET /v1/reports/overdraft?user_id=1&days=7` → 近 N 日（UTC+8 窗口）溢出/透支事件列表（block 无 hints 情况会生成警报记录），返回 `request_id` 与事件详情。
 
 ## POST /v1/payments/refund
 - Request body:
