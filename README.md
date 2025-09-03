@@ -64,6 +64,8 @@ This milestone (M1) delivers the plugin framework and data layer.
     - `LITELLM_SYNC_ENABLED=1` to enable wallet→LiteLLM budget periodic sync.
     - `LITELLM_SYNC_INTERVAL_SEC` sync frequency (default 900).
     - `LITELLM_SYNC_CURRENCY` target currency code (default `USD`).
+  - Degrade default (demo):
+    - `DEGRADE_DEFAULT_MODEL` (default `gpt-4o-mini`).
 
 ## Logging
 - INFO-level logs around checkout, webhooks, refunds, status queries, and wallet operations.

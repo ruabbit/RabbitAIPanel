@@ -83,12 +83,21 @@ Notes:
   { "model": "gpt-4o", "messages": [{"role":"user","content":"hi"}], "input_tokens": 100, "output_tokens": 50 }
   ```
   - Behavior:
-    - If `input_tokens/output_tokens` provided, estimate cost via PriceRule for daily limit gating；若超限且策略为 `block`，返回 403；`grace/degrade` 通过。
-    - 请求转发到 `{LITELLM_BASE_URL}/chat/completions`，返回体追加 `request_id`。
-    - 若 upstream 返回 usage（OpenAI 格式），按 PriceRule 计算最终费用，记录本地 Usage，并推送到 Lago `/events/usage`（若启用）。
+    - 若提供 `input_tokens/output_tokens`，先行按 PriceRule 预估费用做当日限额门禁：
+      - `block`：超限返回 403；
+      - `grace`：允许通过；
+      - `degrade`：若预估超限，降级模型（本阶段硬编码 `gpt-4o-mini`）。
+    - 请求转发至 `{LITELLM_BASE_URL}/chat/completions`；响应追加 `request_id`，若发生降级追加 `degraded_model`。
+    - 若 upstream 返回 usage（OpenAI 格式），按 PriceRule 计算最终费用并记录 Usage；
+      - `grace` 策略：仅对“未超限剩余额度”部分计费，溢出部分不计费（本阶段约定）。
+      - 推送 Lago `/lago/events/usage`（如启用）。
   - Responses:
     - 200 upstream JSON + `request_id`
     - 403 超出日限额（`block`）
+
+## Reports
+- `GET /v1/reports/daily?user_id=1&date=2025-09-03` → 单日（UTC+8 窗口）聚合：`amount_cents`、`total_tokens`，返回 `request_id`。
+- `GET /v1/reports/summary?user_id=1&days=7` → 近 N 日（UTC+8 窗口）按日聚合：`amount_cents`、`total_tokens`，返回 `request_id` 与每日数组。
 
 ## POST /v1/payments/refund
 - Request body:

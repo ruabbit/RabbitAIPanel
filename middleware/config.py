@@ -34,6 +34,8 @@ class Settings:
     LITELLM_SYNC_ENABLED: bool = os.getenv("LITELLM_SYNC_ENABLED", "0") in ("1", "true", "True")
     LITELLM_SYNC_INTERVAL_SEC: int = int(os.getenv("LITELLM_SYNC_INTERVAL_SEC", "900"))
     LITELLM_SYNC_CURRENCY: str = os.getenv("LITELLM_SYNC_CURRENCY", "USD")
+    # degrade default (demo): fallback model when policy=degrade and overflow
+    DEGRADE_DEFAULT_MODEL: str = os.getenv("DEGRADE_DEFAULT_MODEL", "gpt-4o-mini")
 
     # dev api auth
     DEV_API_KEY: str | None = os.getenv("DEV_API_KEY")

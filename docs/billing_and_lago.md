@@ -2,7 +2,9 @@
 
 ## Timezone & Limits
 - Daily limit reset timezone: UTC+8.
-- Overflow policy (default): `block` (reject requests when daily limit exceeded). Alternative policies can be introduced later: `grace`, `degrade`.
+- Overflow policy (default): `block` (reject requests when daily limit exceeded). Supported policies: `grace`, `degrade`.
+- `grace` policy: Overflow portion is not charged（溢出部分不计费），仅对未超限剩余额度部分计费（本阶段约定）。
+- `degrade` policy: 当前阶段简单实现为降级至 `gpt-4o-mini`，未来版本将支持完整可配置的降级映射与策略。
 
 ## Usage Accounting
 - Failed requests: not counted in Usage (for now). This is intentional; keep in mind that error retries might shift cost to later successful calls.

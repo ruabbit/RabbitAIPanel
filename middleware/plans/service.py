@@ -149,26 +149,47 @@ def estimate_cost_for_tokens(user_id: int, *, model: str, input_tokens: int, out
         return cents, pa.timezone
 
 
-def check_daily_limit(user_id: int, *, add_amount_cents: int, timezone: str = "UTC+8") -> Tuple[bool, str, Optional[str]]:
-    """Check if adding amount would exceed today's daily limit. Returns (allowed, policy, reason)."""
+def _today_spend_cents(session: Session, user_id: int, *, reset_time: str = "00:00") -> int:
+    start = utc8_day_start(hhmm=reset_time)
+    total = session.query(func.coalesce(func.sum(Usage.computed_amount_cents), 0)).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.currency == "USD").scalar() or 0
+    return int(total)
+
+
+def get_daily_limit_status(user_id: int) -> Tuple[Optional[DailyLimitPlan], int, int]:
+    """Return (dlp, spent_today_cents, remaining_cents). If no plan/dlp, dlp is None and remaining is a large number."""
     with session_scope() as s:
         pa = get_assignment("user", user_id)
         if not pa:
-            return True, "none", "no plan"
+            return None, 0, 10**12
         dlp = s.get(DailyLimitPlan, pa.plan_id)
         if not dlp:
-            return True, "none", "no daily limit"
-        # today window start in UTC based on plan reset_time / UTC+8
-        start = utc8_day_start(hhmm=dlp.reset_time)
-        total = s.query(func.coalesce(func.sum(Usage.computed_amount_cents), 0)).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.currency == "USD").scalar() or 0
-        if total + add_amount_cents <= dlp.daily_limit_cents:
-            return True, dlp.overflow_policy, "within limit"
+            return None, 0, 10**12
+        spent = _today_spend_cents(s, user_id, reset_time=dlp.reset_time)
+        remaining = max(0, int(dlp.daily_limit_cents) - spent)
+        return dlp, spent, remaining
+
+
+def check_daily_limit(user_id: int, *, add_amount_cents: int, timezone: str = "UTC+8") -> Tuple[bool, str, Optional[str], int]:
+    """Check if adding amount would exceed today's daily limit.
+    Returns (allowed, policy, reason, remaining_cents_before).
+    """
+    with session_scope() as s:
+        pa = get_assignment("user", user_id)
+        if not pa:
+            return True, "none", "no plan", 10**12
+        dlp = s.get(DailyLimitPlan, pa.plan_id)
+        if not dlp:
+            return True, "none", "no daily limit", 10**12
+        spent = _today_spend_cents(s, user_id, reset_time=dlp.reset_time)
+        remaining = max(0, int(dlp.daily_limit_cents) - spent)
+        if spent + add_amount_cents <= dlp.daily_limit_cents:
+            return True, dlp.overflow_policy, "within limit", remaining
         # overflow
         if dlp.overflow_policy == "block":
-            return False, dlp.overflow_policy, "daily limit exceeded"
+            return False, dlp.overflow_policy, "daily limit exceeded", remaining
         elif dlp.overflow_policy in ("grace", "degrade"):
-            return True, dlp.overflow_policy, "overflow grace/degrade"
-        return False, dlp.overflow_policy, "exceeded"
+            return True, dlp.overflow_policy, "overflow grace/degrade", remaining
+        return False, dlp.overflow_policy, "exceeded", remaining
 
 
 def record_usage_row(user_id: int, *, model: str, input_tokens: int, output_tokens: int, total_tokens: Optional[int], computed_amount_cents: int, request_id: Optional[str]) -> None:
@@ -187,4 +208,3 @@ def record_usage_row(user_id: int, *, model: str, input_tokens: int, output_toke
             request_id=request_id,
         )
         s.add(u)
-
