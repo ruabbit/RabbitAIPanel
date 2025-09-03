@@ -5,10 +5,11 @@ import time
 import secrets
 from typing import Optional
 
-from fastapi import FastAPI, Header, Request, HTTPException, Query, Depends
+from fastapi import FastAPI, Header, Request, HTTPException, Query, Depends, Response
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import uuid
 from pydantic import BaseModel, Field
 
 from middleware.db import init_db
@@ -40,8 +41,10 @@ app.add_middleware(
 
 
 def dev_auth(
+    response: Response,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),
     x_dev_user_id: str | None = Header(default=None, alias="x-dev-user-id"),
+    x_request_id: str | None = Header(default=None, alias="x-request-id"),
 ):
     """Dev auth behavior:
     - If DEV_API_KEY not set: no auth (open dev mode).
@@ -50,6 +53,10 @@ def dev_auth(
     Returns a context dict for downstream to pick dev_user_id.
     """
     ctx: dict = {}
+    # request id propagation
+    request_id = (x_request_id or str(uuid.uuid4()))
+    ctx["request_id"] = request_id
+    response.headers["x-request-id"] = request_id
     if settings.DEV_API_KEY:
         if not x_api_key or x_api_key != settings.DEV_API_KEY:
             raise HTTPException(status_code=401, detail="unauthorized")
@@ -81,7 +88,8 @@ def api_checkout(body: CheckoutBody, ctx: dict = Depends(dev_auth)):
             currency=body.currency.upper(),
         )
         logger.info(
-            "checkout.created provider=%s order_id=%s user_id=%s amount_cents=%s currency=%s",
+            "checkout.created request_id=%s provider=%s order_id=%s user_id=%s amount_cents=%s currency=%s",
+            ctx.get("request_id"),
             body.provider,
             order_id,
             user_id,
@@ -95,20 +103,23 @@ def api_checkout(body: CheckoutBody, ctx: dict = Depends(dev_auth)):
             "provider_txn_id": init.provider_txn_id,
         }
     except Exception as e:
-        logger.warning("checkout.error order_id=%s err=%s", order_id, e)
+        logger.warning("checkout.error request_id=%s order_id=%s err=%s", ctx.get("request_id"), order_id, e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/v1/webhooks/stripe")
-async def stripe_webhook(request: Request):
+async def stripe_webhook(request: Request, response: Response):
     body = await request.body()
     headers = {k: v for k, v in request.headers.items()}
+    # request id propagation for webhooks
+    request_id = headers.get("x-request-id") or str(uuid.uuid4())
+    response.headers["x-request-id"] = request_id
     try:
         event = process_webhook(provider_name="stripe", headers=headers, body=body)
     except Exception as e:
-        logger.warning("webhook.error provider=stripe err=%s", e)
+        logger.warning("webhook.error request_id=%s provider=stripe err=%s", request_id, e)
         raise HTTPException(status_code=400, detail=str(e))
-    logger.info("webhook.handled provider=stripe event_type=%s order_id=%s", event.event_type, event.order_id)
+    logger.info("webhook.handled request_id=%s provider=stripe event_type=%s order_id=%s", request_id, event.event_type, event.order_id)
     return {"ok": True, "event_type": event.event_type, "order_id": event.order_id}
 
 
@@ -121,7 +132,7 @@ class RefundBody(BaseModel):
 
 
 @app.post("/v1/payments/refund")
-def api_refund(body: RefundBody, _: bool = Depends(dev_auth)):
+def api_refund(body: RefundBody, ctx: dict = Depends(dev_auth)):
     try:
         res = refund_payment(
             provider_name=body.provider,
@@ -133,7 +144,8 @@ def api_refund(body: RefundBody, _: bool = Depends(dev_auth)):
         if not res.ok:
             raise HTTPException(status_code=400, detail=res.error or "refund failed")
         logger.info(
-            "refund.ok provider=%s order_id=%s provider_txn_id=%s amount_cents=%s",
+            "refund.ok request_id=%s provider=%s order_id=%s provider_txn_id=%s amount_cents=%s",
+            ctx.get("request_id"),
             body.provider,
             body.order_id,
             body.provider_txn_id,
@@ -142,7 +154,8 @@ def api_refund(body: RefundBody, _: bool = Depends(dev_auth)):
         return {"ok": True, "provider_refund_id": res.provider_refund_id}
     except Exception as e:
         logger.warning(
-            "refund.error provider=%s order_id=%s provider_txn_id=%s err=%s",
+            "refund.error request_id=%s provider=%s order_id=%s provider_txn_id=%s err=%s",
+            ctx.get("request_id"),
             body.provider,
             body.order_id,
             body.provider_txn_id,
@@ -156,12 +169,13 @@ def api_status(
     provider: str = Query("stripe"),
     provider_txn_id: Optional[str] = None,
     order_id: Optional[str] = None,
-    _: bool = Depends(dev_auth),
+    ctx: dict = Depends(dev_auth),
 ):
     try:
         data = get_payment_status(provider_name=provider, provider_txn_id=provider_txn_id, order_id=order_id)
         logger.info(
-            "status.query provider=%s order_id=%s provider_txn_id=%s local_status=%s provider_status=%s",
+            "status.query request_id=%s provider=%s order_id=%s provider_txn_id=%s local_status=%s provider_status=%s",
+            ctx.get("request_id"),
             provider,
             order_id,
             provider_txn_id,
@@ -171,7 +185,8 @@ def api_status(
         return data
     except Exception as e:
         logger.warning(
-            "status.error provider=%s order_id=%s provider_txn_id=%s err=%s",
+            "status.error request_id=%s provider=%s order_id=%s provider_txn_id=%s err=%s",
+            ctx.get("request_id"),
             provider,
             order_id,
             provider_txn_id,

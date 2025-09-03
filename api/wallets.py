@@ -24,9 +24,9 @@ def get_db():
 
 
 @router.get("/{user_id}")
-def get_wallets(user_id: int, _: bool = Depends(dev_auth), db: Session = Depends(get_db)):
+def get_wallets(user_id: int, ctx: dict = Depends(dev_auth), db: Session = Depends(get_db)):
     rows = db.query(Wallet).filter_by(user_id=user_id).all()
-    logger.info("wallet.query user_id=%s count=%s", user_id, len(rows))
+    logger.info("wallet.query request_id=%s user_id=%s count=%s", ctx.get("request_id"), user_id, len(rows))
     return {
         "user_id": user_id,
         "wallets": [
@@ -37,7 +37,7 @@ def get_wallets(user_id: int, _: bool = Depends(dev_auth), db: Session = Depends
 
 
 @router.get("/{user_id}/ledger")
-def get_ledger(user_id: int, limit: int = Query(20, gt=0, le=200), _: bool = Depends(dev_auth), db: Session = Depends(get_db)):
+def get_ledger(user_id: int, limit: int = Query(20, gt=0, le=200), ctx: dict = Depends(dev_auth), db: Session = Depends(get_db)):
     rows = (
         db.query(LedgerEntry)
         .join(Wallet, Wallet.id == LedgerEntry.wallet_id)
@@ -46,7 +46,7 @@ def get_ledger(user_id: int, limit: int = Query(20, gt=0, le=200), _: bool = Dep
         .limit(limit)
         .all()
     )
-    logger.info("wallet.ledger user_id=%s limit=%s returned=%s", user_id, limit, len(rows))
+    logger.info("wallet.ledger request_id=%s user_id=%s limit=%s returned=%s", ctx.get("request_id"), user_id, limit, len(rows))
     return {
         "user_id": user_id,
         "entries": [

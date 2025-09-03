@@ -1,5 +1,17 @@
 # API (Draft)
 
+## Conventions
+- Request ID: The API accepts optional `X-Request-ID` header. If missing, a new ID is generated. All responses include `X-Request-ID` and server logs carry this value for correlation.
+- Dev Auth: For non-webhook endpoints, include `x-api-key: $DEV_API_KEY`.
+
+## GET /v1/config/stripe
+- Returns Stripe publishable key for frontend initialization.
+
+Response JSON:
+```
+{ "publishable_key": "pk_test_..." }
+```
+
 ## POST /v1/payments/checkout
 - Create a top-up order and initialize a Stripe PaymentIntent.
 
@@ -42,6 +54,10 @@ Notes:
 - Enable Alipay in Stripe Dashboard to expose Alipay via the same UI (Stripe-only Alipay in M2).
 - Wallet is credited only on `payment_intent.succeeded`.
 - Refunds and query exist on provider; endpoints to be added later.
+
+## Demo
+- Payment Element demo page: `/demo/payment_element?api=http://localhost:8000&key=$DEV_API_KEY`
+- It fetches publishable key from `/v1/config/stripe` automatically; `pk` query param can override for testing.
 
 ## POST /v1/payments/refund
 - Request body:

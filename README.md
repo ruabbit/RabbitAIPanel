@@ -42,7 +42,9 @@ This milestone (M1) delivers the plugin framework and data layer.
 
 - Start API: `uvicorn api.server:app --reload`
 - Open demo page:
-  - `http://localhost:8000/demo/payment_element?api=http://localhost:8000&pk=$STRIPE_PUBLISHABLE_KEY&key=$DEV_API_KEY`
+  - Recommended: `http://localhost:8000/demo/payment_element?api=http://localhost:8000&key=$DEV_API_KEY`
+    - The demo fetches Stripe publishable key from `/v1/config/stripe` automatically.
+    - Fallback (override): you can still pass `pk=$STRIPE_PUBLISHABLE_KEY` in query.
 
 ## Dev Auth
 - Header: set `x-api-key: $DEV_API_KEY` for all non-webhook endpoints (checkout, refund, status).
@@ -50,9 +52,18 @@ This milestone (M1) delivers the plugin framework and data layer.
 - Example curl:
   - `curl -H "x-api-key: $DEV_API_KEY" -H "Content-Type: application/json" -d '{"user_id":1,"amount_cents":1000,"currency":"USD"}' http://localhost:8000/v1/payments/checkout`
 
+## Request ID
+- Incoming request may include `X-Request-ID`; if absent, the server generates one.
+- The server echoes `X-Request-ID` on every response and includes it in logs.
+- Use this to correlate client ↔ server logs and webhook traces.
+
 ## Environment (optional integrations)
 - Lago: `LAGO_API_URL`, `LAGO_API_KEY`
 - LiteLLM: `LITELLM_BASE_URL`, `LITELLM_MASTER_KEY`, `LITELLM_BUDGET_DURATION` (e.g. `30d`)
+
+## Logging
+- INFO-level logs around checkout, webhooks, refunds, status queries, and wallet operations.
+- Log keys include: `request_id`, `order_id`, `provider`, `amount_cents`, `currency`.
 
 ## Roadmap
 - M1: Plugin framework + models + provider skeletons

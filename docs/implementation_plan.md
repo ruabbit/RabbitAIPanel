@@ -34,6 +34,7 @@ class PaymentProvider(Protocol):
    - Implement PaymentIntent creation (metadata.order_id, automatic_payment_methods enabled).
    - Implement webhook verification (Stripe Webhook secret) handling `payment_intent.succeeded` / `payment_intent.payment_failed` and optional refunds.
    - On success: credit wallet (by currency) and create Lago credit/invoice, then link LiteLLM budgets.
+   - Implement Request ID propagation: accept `X-Request-ID`, echo in responses, include in logs for correlation.
 3) M3: key CRUD + budgets + model allowlist; proxy pass to LiteLLM
 4) M4: risk/limits + notifications + retries
 
