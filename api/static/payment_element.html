@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Stripe Payment Element Demo</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 20px; }
+      #payment-element { margin: 20px 0; }
+    </style>
+  </head>
+  <body>
+    <h3>Top-up Wallet</h3>
+    <div>
+      <label>User ID <input id="userId" type="number" value="1"/></label>
+      <label>Amount (cents) <input id="amount" type="number" value="1000"/></label>
+      <label>Currency <input id="currency" type="text" value="USD"/></label>
+      <button id="init">Init Checkout</button>
+    </div>
+
+    <div id="payment-element"></div>
+    <button id="submit" disabled>Pay</button>
+    <div id="status"></div>
+
+    <script>
+      const qs = new URLSearchParams(location.search);
+      const API_BASE = qs.get('api') || '';
+      const API_KEY = qs.get('key') || '';
+      const PUBLISHABLE_KEY = qs.get('pk') || '';
+
+      let stripe, elements, clientSecret, orderId;
+
+      async function initCheckout() {
+        const userId = Number(document.getElementById('userId').value);
+        const amount = Number(document.getElementById('amount').value);
+        const currency = document.getElementById('currency').value;
+        const res = await fetch(`${API_BASE}/v1/payments/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+          body: JSON.stringify({ user_id: userId, amount_cents: amount, currency, provider: 'stripe' })
+        });
+        if (!res.ok) {
+          document.getElementById('status').innerText = 'Init failed';
+          return;
+        }
+        const data = await res.json();
+        clientSecret = data.payload.client_secret;
+        orderId = data.order_id;
+
+        stripe = Stripe(PUBLISHABLE_KEY);
+        elements = stripe.elements({ clientSecret });
+        const paymentElement = elements.create('payment');
+        paymentElement.mount('#payment-element');
+        document.getElementById('submit').disabled = false;
+      }
+
+      async function submitPayment() {
+        document.getElementById('submit').disabled = true;
+        const {error} = await stripe.confirmPayment({ elements, redirect: 'if_required' });
+        if (error) {
+          document.getElementById('status').innerText = error.message || 'Payment failed';
+          document.getElementById('submit').disabled = false;
+          return;
+        }
+        document.getElementById('status').innerText = 'Payment processing...';
+        // Poll payment status
+        const poll = async () => {
+          const r = await fetch(`${API_BASE}/v1/payments/status?provider=stripe&order_id=${orderId}`, { headers: {'x-api-key': API_KEY} });
+          const j = await r.json();
+          if (j.provider && j.provider.status === 'succeeded') {
+            document.getElementById('status').innerText = 'Payment succeeded';
+          } else if (j.provider && (j.provider.status === 'failed' || j.provider.status === 'canceled')) {
+            document.getElementById('status').innerText = 'Payment failed';
+          } else {
+            setTimeout(poll, 1500);
+          }
+        }
+        setTimeout(poll, 1000);
+      }
+
+      document.getElementById('init').onclick = initCheckout;
+      document.getElementById('submit').onclick = submitPayment;
+    </script>
+  </body>
+  </html>
+

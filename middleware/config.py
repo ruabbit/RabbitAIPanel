@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+
+
+@dataclass
+class Settings:
+    # database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+
+    # payment providers
+    STRIPE_SECRET_KEY: str | None = os.getenv("STRIPE_SECRET_KEY")
+    STRIPE_WEBHOOK_SECRET: str | None = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+    ALIPAY_APP_ID: str | None = os.getenv("ALIPAY_APP_ID")
+    ALIPAY_APP_PRIVATE_KEY: str | None = os.getenv("ALIPAY_APP_PRIVATE_KEY")
+    ALIPAY_PUBLIC_KEY: str | None = os.getenv("ALIPAY_PUBLIC_KEY")
+
+    # lago
+    LAGO_API_URL: str | None = os.getenv("LAGO_API_URL")
+    LAGO_API_KEY: str | None = os.getenv("LAGO_API_KEY")
+    LAGO_CREDIT_ENDPOINT: str = os.getenv("LAGO_CREDIT_ENDPOINT", "/credits")
+
+    # litellm
+    LITELLM_BASE_URL: str | None = os.getenv("LITELLM_BASE_URL")
+    LITELLM_MASTER_KEY: str | None = os.getenv("LITELLM_MASTER_KEY")
+    LITELLM_BUDGET_LINKAGE: bool = os.getenv("LITELLM_BUDGET_LINKAGE", "0") in ("1", "true", "True")
+    LITELLM_BUDGET_DURATION: str | None = os.getenv("LITELLM_BUDGET_DURATION")
+
+    # dev api auth
+    DEV_API_KEY: str | None = os.getenv("DEV_API_KEY")
+
+    # stripe publishable key for Payment Element
+    STRIPE_PUBLISHABLE_KEY: str | None = os.getenv("STRIPE_PUBLISHABLE_KEY")
+
+
+settings = Settings()

@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenv
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Env/config
+.env
+
+# DB/coverage
+dev.db
+*.sqlite*
+.coverage
+coverage.xml
+
+# Serena internal state
+.serena/
