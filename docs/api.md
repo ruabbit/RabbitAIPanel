@@ -129,6 +129,11 @@ Notes:
 - `GET /v1/reports/period?user_id=1&date_from=2025-09-01&date_to=2025-09-03&format=json|csv` → 账期聚合（UTC+8 窗口）：
   - 字段：`usage_amount_cents`、`usage_tokens`、`topup_cents`、`refunds_cents`、`net_topup_cents`、`balance_delta_cents`，返回 `request_id`。
   - `format=csv` 返回 CSV（首行表头+一行数据）。
+- `GET /v1/reports/budget?user_id=1` → 预算与额度总览：
+  - `wallets`：用户钱包（多币种）余额与低阈值。
+  - `daily_limit`：日限额计划（`daily_limit_cents`、`overflow_policy`、`reset_time`、`spent_today_cents`、`remaining_cents`、当前窗口 `window_start|end`）。
+  - `api_keys`：该用户的活跃 API Key 的预算（`max_budget_cents`、`budget_duration`）与 `key_last4`、白名单。
+  - `gating`：透支强门禁配置；`litellm`：预算联动与同步开关。
 
 ## POST /v1/payments/refund
 - Request body:

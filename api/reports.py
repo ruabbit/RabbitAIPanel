@@ -10,9 +10,10 @@ from sqlalchemy import func
 
 from .server import request_context
 from middleware.db import SessionLocal
-from middleware.models import Usage, OverdraftAlert
+from middleware.models import Usage, OverdraftAlert, Wallet, ApiKey
 from middleware.lago.service import LagoPayment
-from middleware.plans.service import utc8_day_start
+from middleware.plans.service import utc8_day_start, get_daily_limit_status
+from middleware.config import settings
 
 
 router = APIRouter(prefix="/v1/reports", tags=["reports"])
@@ -38,6 +39,76 @@ def daily_report(user_id: int, date: str = Query(..., description="YYYY-MM-DD"),
         ).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end)
         amount_cents, total_tokens = q.one()
     return {"request_id": ctx.get("request_id"), "user_id": user_id, "date": date, "amount_cents": int(amount_cents), "total_tokens": int(total_tokens)}
+
+
+@router.get("/budget")
+def budget_report(user_id: int, ctx: dict = Depends(request_context)):
+    # Wallet balances per currency
+    wallets = []
+    with _session() as s:
+        wrows = s.query(Wallet).filter(Wallet.user_id == user_id).all()
+        for w in wrows:
+            wallets.append(
+                {
+                    "currency": w.currency,
+                    "balance_cents": int(w.balance_cents or 0),
+                    "low_threshold_cents": int(w.low_threshold_cents or 0) if w.low_threshold_cents is not None else None,
+                }
+            )
+
+        # API keys with budget fields
+        krows = s.query(ApiKey).filter(ApiKey.user_id == user_id, ApiKey.active == True).all()  # noqa: E712
+        api_keys = [
+            {
+                "id": k.id,
+                "key_last4": k.key_last4,
+                "active": bool(k.active),
+                "max_budget_cents": int(k.max_budget_cents or 0) if k.max_budget_cents is not None else None,
+                "budget_duration": k.budget_duration,
+                "model_allowlist": k.model_allowlist,
+            }
+            for k in krows
+        ]
+
+    # Daily limit plan status (UTC+8 day window)
+    dlp, spent_today, remaining = get_daily_limit_status(user_id)
+    daily_limit = None
+    if dlp is not None:
+        # Compute current window boundaries for reference
+        now = dt.datetime.utcnow()
+        window_start = utc8_day_start(now, hhmm=str(dlp.reset_time))
+        window_end = window_start + dt.timedelta(days=1)
+        daily_limit = {
+            "plan_id": dlp.id,
+            "daily_limit_cents": int(dlp.daily_limit_cents),
+            "overflow_policy": dlp.overflow_policy,
+            "reset_time": dlp.reset_time,
+            "spent_today_cents": int(spent_today),
+            "remaining_cents": int(remaining),
+            "window_start": window_start.isoformat(),
+            "window_end": window_end.isoformat(),
+        }
+
+    # System policy snapshot
+    gating = {
+        "enabled": bool(settings.OVERDRAFT_GATING_ENABLED),
+        "mode": settings.OVERDRAFT_GATING_MODE,
+    }
+    litellm = {
+        "configured": bool(settings.LITELLM_BASE_URL and settings.LITELLM_MASTER_KEY),
+        "sync_enabled": bool(settings.LITELLM_SYNC_ENABLED),
+        "currency": settings.LITELLM_SYNC_CURRENCY,
+    }
+
+    return {
+        "request_id": ctx.get("request_id"),
+        "user_id": user_id,
+        "wallets": wallets,
+        "daily_limit": daily_limit,
+        "api_keys": api_keys,
+        "gating": gating,
+        "litellm": litellm,
+    }
 
 
 @router.get("/summary")
