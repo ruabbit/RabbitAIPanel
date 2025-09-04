@@ -42,7 +42,11 @@ def daily_report(user_id: int, date: str = Query(..., description="YYYY-MM-DD"),
 
 
 @router.get("/budget")
-def budget_report(user_id: int, ctx: dict = Depends(request_context)):
+def budget_report(
+    user_id: int,
+    format: str = Query("json", pattern=r"^(json|csv)$"),
+    ctx: dict = Depends(request_context),
+):
     # Wallet balances per currency
     wallets = []
     with _session() as s:
@@ -100,7 +104,7 @@ def budget_report(user_id: int, ctx: dict = Depends(request_context)):
         "currency": settings.LITELLM_SYNC_CURRENCY,
     }
 
-    return {
+    data = {
         "request_id": ctx.get("request_id"),
         "user_id": user_id,
         "wallets": wallets,
@@ -109,6 +113,135 @@ def budget_report(user_id: int, ctx: dict = Depends(request_context)):
         "gating": gating,
         "litellm": litellm,
     }
+
+    if format == "csv":
+        # Flatten key metrics for CSV
+        wallets_summary = ";".join([f"{w['currency']}:{w['balance_cents']}" for w in wallets]) if wallets else ""
+        api_keys_count = len(data["api_keys"]) if data.get("api_keys") else 0
+        api_keys_budget_total = 0
+        for k in data.get("api_keys", []):
+            if k.get("max_budget_cents") is not None:
+                api_keys_budget_total += int(k.get("max_budget_cents") or 0)
+        dl = data.get("daily_limit") or {}
+        headers = [
+            "request_id",
+            "user_id",
+            "wallets_summary",
+            "daily_limit_cents",
+            "spent_today_cents",
+            "remaining_cents",
+            "gating_enabled",
+            "gating_mode",
+            "litellm_configured",
+            "litellm_sync_enabled",
+            "api_keys_count",
+            "api_keys_budget_total_cents",
+        ]
+        row = [
+            str(data.get("request_id")),
+            str(user_id),
+            wallets_summary,
+            str(dl.get("daily_limit_cents") or ""),
+            str(dl.get("spent_today_cents") or ""),
+            str(dl.get("remaining_cents") or ""),
+            str(1 if data.get("gating", {}).get("enabled") else 0),
+            str(data.get("gating", {}).get("mode") or ""),
+            str(1 if data.get("litellm", {}).get("configured") else 0),
+            str(1 if data.get("litellm", {}).get("sync_enabled") else 0),
+            str(api_keys_count),
+            str(api_keys_budget_total),
+        ]
+        csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
+        return PlainTextResponse(content=csv_text, media_type="text/csv")
+
+    return data
+
+
+@router.get("/period_team")
+def period_team_report(
+    team_id: int,
+    date_from: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
+    date_to: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
+    model: Optional[str] = Query(None, description="filter by model"),
+    success: Optional[bool] = Query(None, description="filter by success flag"),
+    format: str = Query("json", pattern=r"^(json|csv)$"),
+    ctx: dict = Depends(request_context),
+):
+    # parse dates
+    try:
+        y1, m1, d1 = map(int, date_from.split("-"))
+        y2, m2, d2 = map(int, date_to.split("-"))
+        base_from = dt.datetime(y1, m1, d1)
+        base_to = dt.datetime(y2, m2, d2)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid date format")
+    if base_to < base_from:
+        raise HTTPException(status_code=400, detail="date_to must be >= date_from")
+    start = utc8_day_start(base_from, hhmm="00:00")
+    end = utc8_day_start(base_to, hhmm="00:00") + dt.timedelta(days=1)
+
+    with _session() as s:
+        uq = s.query(
+            func.coalesce(func.sum(Usage.computed_amount_cents), 0),
+            func.coalesce(func.sum(Usage.total_tokens), 0),
+        ).filter(Usage.team_id == team_id, Usage.created_at >= start, Usage.created_at < end)
+        if model:
+            uq = uq.filter(Usage.model == model)
+        if success is not None:
+            uq = uq.filter(Usage.success == bool(success))
+        usage_amount_cents, usage_tokens = uq.one()
+
+        topup = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
+            LagoPayment.team_id == team_id,
+            LagoPayment.created_at >= start,
+            LagoPayment.created_at < end,
+            LagoPayment.event_type == "wallet_topup",
+            LagoPayment.status == "succeeded",
+        ).scalar() or 0
+
+        refunds = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
+            LagoPayment.team_id == team_id,
+            LagoPayment.created_at >= start,
+            LagoPayment.created_at < end,
+            LagoPayment.event_type == "refund",
+        ).scalar() or 0
+
+    net_topup_cents = int(topup) - int(refunds)
+    usage_amount_cents = int(usage_amount_cents)
+    usage_tokens = int(usage_tokens)
+    balance_delta_cents = net_topup_cents - usage_amount_cents
+
+    data = {
+        "request_id": ctx.get("request_id"),
+        "team_id": team_id,
+        "from": date_from,
+        "to": date_to,
+        "usage_amount_cents": usage_amount_cents,
+        "usage_tokens": usage_tokens,
+        "topup_cents": int(topup),
+        "refunds_cents": int(refunds),
+        "net_topup_cents": net_topup_cents,
+        "balance_delta_cents": balance_delta_cents,
+    }
+
+    if format == "csv":
+        headers = [
+            "request_id",
+            "team_id",
+            "from",
+            "to",
+            "usage_amount_cents",
+            "usage_tokens",
+            "topup_cents",
+            "refunds_cents",
+            "net_topup_cents",
+            "balance_delta_cents",
+        ]
+        row = [str(data[k]) for k in headers]
+        csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
+        return PlainTextResponse(content=csv_text, media_type="text/csv")
+
+    return data
 
 
 @router.get("/summary")
@@ -164,6 +297,8 @@ def period_report(
     user_id: int,
     date_from: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
     date_to: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
+    model: Optional[str] = Query(None, description="filter by model"),
+    success: Optional[bool] = Query(None, description="filter by success flag"),
     format: str = Query("json", pattern=r"^(json|csv)$"),
     ctx: dict = Depends(request_context),
 ):
@@ -181,10 +316,15 @@ def period_report(
     end = utc8_day_start(base_to, hhmm="00:00") + dt.timedelta(days=1)
 
     with _session() as s:
-        usage_amount_cents, usage_tokens = s.query(
+        uq = s.query(
             func.coalesce(func.sum(Usage.computed_amount_cents), 0),
             func.coalesce(func.sum(Usage.total_tokens), 0),
-        ).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end).one()
+        ).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end)
+        if model:
+            uq = uq.filter(Usage.model == model)
+        if success is not None:
+            uq = uq.filter(Usage.success == bool(success))
+        usage_amount_cents, usage_tokens = uq.one()
 
         topup = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
             LagoPayment.user_id == user_id,
