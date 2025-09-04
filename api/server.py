@@ -93,30 +93,35 @@ async def _logging_and_ratelimit(request: Request, call_next):
 
     # rate limit
     if settings.RATE_LIMIT_ENABLED:
-        ident = request.headers.get("x-api-key") or request.client.host or "unknown"
-        window = max(1, int(settings.RATE_LIMIT_WINDOW_SEC))
-        limit = max(1, int(settings.RATE_LIMIT_MAX_REQUESTS))
-        now = time.time()
-        bucket = _rate_buckets.get(ident) or []
-        # drop outdated timestamps
-        bucket = [ts for ts in bucket if ts > now - window]
-        if len(bucket) >= limit:
-            # simple Retry-After based on earliest timestamp in window
-            retry_after = int(max(1, window - (now - bucket[0])))
-            return Response(
-                status_code=429,
-                content="rate limit exceeded",
-                headers={
-                    "x-request-id": rid,
-                    "Retry-After": str(retry_after),
-                    "X-RateLimit-Limit": str(limit),
-                    "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(int(now + retry_after)),
-                },
-                media_type="text/plain",
-            )
-        bucket.append(now)
-        _rate_buckets[ident] = bucket
+        p = request.url.path
+        if p.startswith("/v1/webhooks/"):
+            # do not rate-limit webhooks
+            pass
+        else:
+            ident = request.headers.get("x-api-key") or request.client.host or "unknown"
+            window = max(1, int(settings.RATE_LIMIT_WINDOW_SEC))
+            limit = max(1, int(settings.RATE_LIMIT_MAX_REQUESTS))
+            now = time.time()
+            bucket = _rate_buckets.get(ident) or []
+            # drop outdated timestamps
+            bucket = [ts for ts in bucket if ts > now - window]
+            if len(bucket) >= limit:
+                # simple Retry-After based on earliest timestamp in window
+                retry_after = int(max(1, window - (now - bucket[0])))
+                return Response(
+                    status_code=429,
+                    content="rate limit exceeded",
+                    headers={
+                        "x-request-id": rid,
+                        "Retry-After": str(retry_after),
+                        "X-RateLimit-Limit": str(limit),
+                        "X-RateLimit-Remaining": "0",
+                        "X-RateLimit-Reset": str(int(now + retry_after)),
+                    },
+                    media_type="text/plain",
+                )
+            bucket.append(now)
+            _rate_buckets[ident] = bucket
 
     try:
         response = await call_next(request)
