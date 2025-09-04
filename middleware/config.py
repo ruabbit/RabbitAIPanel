@@ -56,5 +56,18 @@ class Settings:
     # outbox retries
     OUTBOX_MAX_ATTEMPTS: int = int(os.getenv("OUTBOX_MAX_ATTEMPTS", "10"))
 
+    # Logto (OIDC / Management API)
+    LOGTO_ENDPOINT: str | None = os.getenv("LOGTO_ENDPOINT")  # e.g. https://tenant.logto.app
+    LOGTO_CLIENT_ID: str | None = os.getenv("LOGTO_CLIENT_ID")
+    LOGTO_CLIENT_SECRET: str | None = os.getenv("LOGTO_CLIENT_SECRET")
+    LOGTO_REDIRECT_URI: str | None = os.getenv("LOGTO_REDIRECT_URI", "http://localhost:8000/auth/social/callback")
+    # management api client credentials (if different from above)
+    LOGTO_MGMT_CLIENT_ID: str | None = os.getenv("LOGTO_MGMT_CLIENT_ID")
+    LOGTO_MGMT_CLIENT_SECRET: str | None = os.getenv("LOGTO_MGMT_CLIENT_SECRET")
+    LOGTO_MGMT_RESOURCE: str | None = os.getenv("LOGTO_MGMT_RESOURCE")  # e.g. https://api.logto.app or {LOGTO_ENDPOINT}/api
+    # optional known connector target ids (map provider -> connector_target_id)
+    CONNECTOR_GOOGLE_ID: str | None = os.getenv("CONNECTOR_GOOGLE_ID")
+    CONNECTOR_GITHUB_ID: str | None = os.getenv("CONNECTOR_GITHUB_ID")
+
 
 settings = Settings()

@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+import time
+import uuid
+import urllib.parse
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import RedirectResponse
+
+from .server import dev_auth, request_context
+from middleware.config import settings
+from middleware.integrations.logto_mgmt import (
+    create_temp_user,
+)
+
+
+router = APIRouter(prefix="/v1/auth", tags=["auth"])
+
+
+_social_states: dict[str, dict] = {}
+
+
+def _resolve_connector(provider: str) -> Optional[str]:
+    p = provider.lower()
+    mapping = {
+        "google": settings.CONNECTOR_GOOGLE_ID,
+        "github": settings.CONNECTOR_GITHUB_ID,
+    }
+    return mapping.get(p)
+
+
+@router.post("/social/start")
+def social_start(provider: str = Query(..., description="google|github"), ctx: dict = Depends(dev_auth)):
+    if not settings.LOGTO_ENDPOINT or not settings.LOGTO_CLIENT_ID or not settings.LOGTO_REDIRECT_URI:
+        raise HTTPException(status_code=500, detail="logto not configured")
+
+    # 1) create temp_ user via management api
+    try:
+        temp_user = create_temp_user()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"create temp user failed: {e}")
+    temp_user_id = str(temp_user.get("id") or temp_user.get("userId") or "")
+    if not temp_user_id:
+        raise HTTPException(status_code=500, detail="temp user id missing")
+
+    # 2) state/nonce
+    state = uuid.uuid4().hex
+    now = int(time.time())
+    _social_states[state] = {
+        "tmp_user_id": temp_user_id,
+        "provider": provider,
+        "created_at": now,
+    }
+
+    # 3) redirect to Logto OIDC authorize (generic). In real use, you can refine to open provider directly.
+    endpoint = settings.LOGTO_ENDPOINT.rstrip("/")
+    client_id = settings.LOGTO_CLIENT_ID
+    redirect_uri = settings.LOGTO_REDIRECT_URI
+    scope = urllib.parse.quote("openid profile email offline_access")
+    auth_url = f"{endpoint}/oidc/auth?client_id={urllib.parse.quote(client_id)}&response_type=code&redirect_uri={urllib.parse.quote(redirect_uri)}&scope={scope}&state={state}"
+
+    # optional hints: show sign-up first and pre-select identifier panel; provider selection left to Logto UI
+    # Developers can customize UI via Logto Console. For demo we keep it generic.
+
+    return {"request_id": ctx.get("request_id"), "redirect_to": auth_url, "state": state, "temp_user_id": temp_user_id}
+
+
+# public callback (no dev auth)
+@router.get("/social/callback", include_in_schema=False)
+def social_callback(state: str = Query(...), code: Optional[str] = Query(None), ver: Optional[str] = Query(None), provider: Optional[str] = Query(None)):
+    """Callback entry after Logto authorization.
+
+    Note: In a full implementation, this endpoint should:
+    - Exchange `code` for tokens if needed; OR
+    - Use `ver` (verification_record_id) and connector_target_id to bind identity to the temp user;
+    - Update user's email/name/avatar via Management API; rename username to email;
+    - Then redirect to standard OIDC login to establish session.
+
+    For demo, we validate state and bounce to a generic sign-in with the same state.
+    """
+    st = _social_states.get(state)
+    if not st:
+        raise HTTPException(status_code=400, detail="invalid state")
+    # lifetimes: 15 minutes
+    if st["created_at"] + 900 < int(time.time()):
+        del _social_states[state]
+        raise HTTPException(status_code=400, detail="state expired")
+
+    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    client_id = settings.LOGTO_CLIENT_ID
+    if not endpoint or not client_id:
+        raise HTTPException(status_code=500, detail="logto not configured")
+
+    # In realistic flow, bind identity here using Management API (requires verification record id from connector).
+    # We keep a placeholder behavior and proceed to sign-in page.
+
+    redirect_uri = settings.LOGTO_REDIRECT_URI or ""
+    scope = urllib.parse.quote("openid profile email offline_access")
+    auth_url = f"{endpoint}/oidc/auth?client_id={urllib.parse.quote(client_id)}&response_type=code&redirect_uri={urllib.parse.quote(redirect_uri)}&scope={scope}&state={uuid.uuid4().hex}"
+    # Cleanup used state
+    try:
+        del _social_states[state]
+    except Exception:
+        pass
+    return RedirectResponse(url=auth_url)
+

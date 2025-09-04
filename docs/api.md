@@ -149,6 +149,23 @@ Notes:
   - `gating`：透支强门禁配置；`litellm`：预算联动与同步开关。
   - 支持 `format=csv`：扁平化导出核心指标（含钱包汇总、日限额、门禁与 LiteLLM 配置、API Key 预算汇总）。
 
+## Auth (Logto)
+- 设计目标：关闭 Logto 公开号注册，同时保留“社交账户一键注册/登录”。
+- 最小闭环（Demo）：
+  - `POST /v1/auth/social/start?provider=google|github`（需 `x-api-key` 开发鉴权）
+    - 后端通过 Management API 预创建 `temp_<uuid>` 用户；返回 `redirect_to`（Logto 授权地址）、`state`、`temp_user_id`。
+  - `GET /auth/social/callback?state=...`（公开回调）
+    - 校验 `state` 后，跳转至标准 OIDC 登录页；
+    - 说明：完整“社交身份绑定到 temp_ 用户、回填邮箱/姓名/头像、用户名改为邮箱”的逻辑将基于 Logto Management API 的社交验证流程在后续迭代完善（本 Demo 暂以骨架呈现）。
+- 配置：
+  - `LOGTO_ENDPOINT`、`LOGTO_CLIENT_ID`、`LOGTO_CLIENT_SECRET`（若仅使用前端 OIDC，可不填 secret）
+  - `LOGTO_REDIRECT_URI`（回调：默认 `http://localhost:8000/auth/social/callback`）
+  - `LOGTO_MGMT_CLIENT_ID`、`LOGTO_MGMT_CLIENT_SECRET`、`LOGTO_MGMT_RESOURCE`（Management API）
+  - `CONNECTOR_GOOGLE_ID`、`CONNECTOR_GITHUB_ID`（可选，用于将来指定 connector target）
+- 约束与后续：
+  - 为保障“仅从本系统注册”，请在 Logto 控制台关闭公开号注册（Sign-in Experience）。
+  - 社交绑定与资料回填的实际绑定接口（verification_record_id）在后续迭代中接入；本阶段文档已说明预期流程与接口骨架。
+
 ## POST /v1/payments/refund
 - Request body:
 ```
