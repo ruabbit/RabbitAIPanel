@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
 from .server import dev_auth, request_context
 from middleware.config import settings
@@ -170,3 +171,56 @@ def social_callback(
 
     # 4) Redirect to root or a front-end page (customize later)
     return RedirectResponse(url="/")
+
+
+class SyncProfileBody(BaseModel):
+    access_token: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    avatar: Optional[str] = None
+
+
+@router.post("/sync_profile")
+def sync_profile(body: SyncProfileBody, ctx: dict = Depends(dev_auth)):
+    if not settings.LOGTO_ENDPOINT:
+        raise HTTPException(status_code=500, detail="logto not configured")
+    # pull userinfo from access token
+    try:
+        info = get_userinfo(access_token=body.access_token)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"invalid access_token: {e}")
+    user_id = str(info.get("sub") or info.get("id") or "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="userinfo missing user id")
+
+    email = body.email or info.get("email") or info.get("primaryEmail")
+    name = body.name or info.get("name") or info.get("username")
+    avatar = body.avatar or info.get("picture") or info.get("avatar")
+
+    updated = {"user_id": user_id}
+    # backfill fields best-effort
+    try:
+        if email:
+            set_primary_email(user_id, email=email)
+            updated["email"] = email
+    except Exception:
+        pass
+    try:
+        if name or avatar:
+            update_profile(user_id, name=name, avatar=avatar)
+            if name:
+                updated["name"] = name
+            if avatar:
+                updated["avatar"] = avatar
+    except Exception:
+        pass
+    try:
+        u = get_user(user_id)
+        uname = str(u.get("username") or "")
+        if email and uname.startswith("temp_"):
+            update_user_username(user_id, username=email)
+            updated["username"] = email
+    except Exception:
+        pass
+
+    return {"request_id": ctx.get("request_id"), "updated": updated}
