@@ -127,3 +127,32 @@ def bind_social_identity(user_id: str, *, verification_record_id: str, connector
     headers = {"logto-verification-id": verification_record_id}
     return _req_json("POST", url, token=token, body=body, extra_headers=headers)
 
+
+# --- OIDC helpers for code exchange and userinfo ---
+
+def exchange_code_for_tokens(*, code: str) -> dict[str, Any]:
+    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    client_id = settings.LOGTO_CLIENT_ID
+    redirect_uri = settings.LOGTO_REDIRECT_URI
+    if not endpoint or not client_id or not redirect_uri:
+        raise RuntimeError("logto oidc not configured")
+    token_endpoint = f"{endpoint}/oidc/token"
+    form = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "client_id": client_id,
+    }
+    if settings.LOGTO_CLIENT_SECRET:
+        form["client_secret"] = settings.LOGTO_CLIENT_SECRET
+    return _post_form(token_endpoint, form)
+
+
+def get_userinfo(*, access_token: str) -> dict[str, Any]:
+    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    url = f"{endpoint}/oidc/me"
+    # use JSON GET with bearer token
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {access_token}"})
+    with urllib.request.urlopen(req, timeout=10) as resp:  # nosec
+        raw = resp.read().decode("utf-8")
+        return json.loads(raw) if raw else {}

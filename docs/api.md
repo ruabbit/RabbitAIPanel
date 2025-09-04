@@ -154,9 +154,10 @@ Notes:
 - 最小闭环（Demo）：
   - `POST /v1/auth/social/start?provider=google|github`（需 `x-api-key` 开发鉴权）
     - 后端通过 Management API 预创建 `temp_<uuid>` 用户；返回 `redirect_to`（Logto 授权地址）、`state`、`temp_user_id`。
-  - `GET /auth/social/callback?state=...`（公开回调）
-    - 校验 `state` 后，跳转至标准 OIDC 登录页；
-    - 说明：完整“社交身份绑定到 temp_ 用户、回填邮箱/姓名/头像、用户名改为邮箱”的逻辑将基于 Logto Management API 的社交验证流程在后续迭代完善（本 Demo 暂以骨架呈现）。
+  - `GET /auth/social/callback?state=...&code=...&ver=...&provider=...&connector=...`（公开回调）
+    - 校验 `state`；若提供 `ver`（verification_record_id）与 `connector`（connector_target_id），则尝试将社交身份绑定到 `temp_` 用户。
+    - 若带 `code`：与 Logto `/oidc/token` 交换 token，调用 `/oidc/me` 获取 `email/name/avatar`，并通过 Management API 回填资料；若用户名为 `temp_` 前缀且已拿到邮箱，则改名为邮箱。
+    - 最后重定向到 `/`（可按需要改为前端地址）。
 - 配置：
   - `LOGTO_ENDPOINT`、`LOGTO_CLIENT_ID`、`LOGTO_CLIENT_SECRET`（若仅使用前端 OIDC，可不填 secret）
   - `LOGTO_REDIRECT_URI`（回调：默认 `http://localhost:8000/auth/social/callback`）
@@ -164,7 +165,7 @@ Notes:
   - `CONNECTOR_GOOGLE_ID`、`CONNECTOR_GITHUB_ID`（可选，用于将来指定 connector target）
 - 约束与后续：
   - 为保障“仅从本系统注册”，请在 Logto 控制台关闭公开号注册（Sign-in Experience）。
-  - 社交绑定与资料回填的实际绑定接口（verification_record_id）在后续迭代中接入；本阶段文档已说明预期流程与接口骨架。
+  - 绑定失败与临时账户清理（temp_ 垃圾回收、冲突合并）留到 demo 后完善；当前已实现绑定与回填的最小闭环，支持社交直连注册。
 
 ## POST /v1/payments/refund
 - Request body:
