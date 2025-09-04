@@ -170,6 +170,14 @@ Notes:
   - 为保障“仅从本系统注册”，请在 Logto 控制台关闭公开号注册（Sign-in Experience）。
   - 绑定失败与临时账户清理（temp_ 垃圾回收、冲突合并）留到 demo 后完善；当前已实现绑定与回填的最小闭环，支持社交直连注册。
 
+## Frontend
+- 技术栈：React + Vite + TailwindCSS + react-icons
+- 目录：`frontend/`
+  - 首页：组件化卡片展示（文案占位：Claude/ChatGPT 中转、官方直连、成本降低 87%、可用性 99.99%）。
+  - 共享布局：`Layout` + `Navbar`（含“使用社交登录”与开发配置弹窗）、`Footer`。
+  - 页面：`/dashboard`（用户后台占位）、`/admin`（管理后台占位），共享同一布局，通过组件化差异化内容。
+  - Logto 登录配合：`POST /v1/auth/social/start` 启动社交登录 → 浏览器跳转至 Logto；回调由后端 `/auth/social/callback` 处理。必要时前端可调用 `POST /v1/auth/sync_profile` 进行资料回填补救。
+
 ## POST /v1/payments/refund
 - Request body:
 ```
