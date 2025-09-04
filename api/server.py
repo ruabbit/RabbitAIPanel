@@ -81,6 +81,67 @@ app.add_middleware(
 )
 
 
+# Basic request logging and rate limiting (demo)
+_rate_buckets: dict[str, list[float]] = {}
+
+
+@app.middleware("http")
+async def _logging_and_ratelimit(request: Request, call_next):
+    t0 = time.time()
+    # obtain request_id (may be set by downstream in response; we compute baseline here)
+    rid = request.headers.get("x-request-id") or str(uuid.uuid4())
+
+    # rate limit
+    if settings.RATE_LIMIT_ENABLED:
+        ident = request.headers.get("x-api-key") or request.client.host or "unknown"
+        window = max(1, int(settings.RATE_LIMIT_WINDOW_SEC))
+        limit = max(1, int(settings.RATE_LIMIT_MAX_REQUESTS))
+        now = time.time()
+        bucket = _rate_buckets.get(ident) or []
+        # drop outdated timestamps
+        bucket = [ts for ts in bucket if ts > now - window]
+        if len(bucket) >= limit:
+            # simple Retry-After based on earliest timestamp in window
+            retry_after = int(max(1, window - (now - bucket[0])))
+            return Response(
+                status_code=429,
+                content="rate limit exceeded",
+                headers={
+                    "x-request-id": rid,
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(int(now + retry_after)),
+                },
+                media_type="text/plain",
+            )
+        bucket.append(now)
+        _rate_buckets[ident] = bucket
+
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        dt_ms = int((time.time() - t0) * 1000)
+        path = request.url.path
+        method = request.method
+        status = getattr(request, "_cached_status", None)
+        # best-effort extract status from response via ASGI scope if needed
+        try:
+            status = status or getattr(response, "status_code", None)
+        except Exception:
+            pass
+        logger.info(
+            "access rid=%s ip=%s method=%s path=%s status=%s dt_ms=%s",
+            rid,
+            request.client.host if request.client else "",
+            method,
+            path,
+            status,
+            dt_ms,
+        )
+
+
 def dev_auth(
     response: Response,
     x_api_key: str | None = Header(default=None, alias="x-api-key"),

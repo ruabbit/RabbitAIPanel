@@ -533,8 +533,14 @@ def process_outbox_once(max_batch: int = 10) -> int:
                     row.last_error = "unsupported event_type/payload"
             except Exception as e:
                 row.attempts += 1
-                backoff = min(3600, 2 ** min(10, row.attempts))
-                row.next_attempt_at = dt.datetime.utcnow() + dt.timedelta(seconds=backoff)
-                row.last_error = str(e)
+                # mark as dead after configured attempts
+                if row.attempts >= settings.OUTBOX_MAX_ATTEMPTS:
+                    row.status = "failed"
+                    row.next_attempt_at = None
+                    row.last_error = f"dead after {row.attempts} attempts: {e}"
+                else:
+                    backoff = min(3600, 2 ** min(10, row.attempts))
+                    row.next_attempt_at = dt.datetime.utcnow() + dt.timedelta(seconds=backoff)
+                    row.last_error = str(e)
         s.commit()
     return sent

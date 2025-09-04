@@ -44,6 +44,14 @@ Response JSON:
   - Subscriptions: handles `customer.subscription.*` (created/updated/deleted). Maps Stripe status to local `Subscription.status`:
     - Stripe `active|trialing` → `active`; `canceled|incomplete_expired` → `canceled`; `past_due|unpaid|incomplete` 或存在 `pause_collection` → `paused`。
 
+## Stability & Security (Demo)
+- 请求标识：请求支持 `X-Request-ID` 透传，若缺省则服务生成；所有响应写回该头，日志包含该值。
+- 速率限制：内存级限流（单进程/节点），默认开启；通过环境变量配置：
+  - `RATE_LIMIT_ENABLED=1`、`RATE_LIMIT_WINDOW_SEC=60`、`RATE_LIMIT_MAX_REQUESTS=120`
+  - 超限返回 `429`，包含 `Retry-After`、`X-RateLimit-*` 头。生产应替换为集中式限流（Redis/网关）。
+- Webhook 验签：Stripe Webhook 若设置 `STRIPE_WEBHOOK_SECRET` 则强制校验签名。
+- Outbox 重试：`event_outbox` 指数退避，失败累计达到 `OUTBOX_MAX_ATTEMPTS`（默认 10）后标记为 dead。
+- 访问日志：记录 `rid`、源 IP、方法、路径、状态码、耗时（ms）。
 Response JSON:
 ```
 { "ok": true, "request_id": "...", "event_type": "payment_succeeded", "order_id": "ORD-..." }

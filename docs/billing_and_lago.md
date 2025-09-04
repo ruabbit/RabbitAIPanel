@@ -103,6 +103,7 @@
 - Invoices & Subscriptions（发票/订阅扣费）
   - 模型：Customer（与 user/team 绑定）、Subscription（关联 Plan/PriceRules）、Product/Price（Plan 映射）、Invoice（账期聚合行项目）
   - 流程：账期结束 → 生成发票 → Stripe Billing 自动扣费（保存 PaymentMethod、Customer、Subscription/Invoice/PaymentIntent）；成功/失败 webhook（`/v1/webhooks/stripe` 处理 `invoice.*`）→ 回写发票状态（draft|finalized|paid|failed）、Credit Note（退款）
+  - Outbox：事件发送（Lago/外部）进入 `event_outbox`，指数退避重试；超过 `OUTBOX_MAX_ATTEMPTS` 标记 dead（demo 期内不阻断主流程）。
   - 对齐：保留 `/lago/events/*` 供事件驱动的账单与对账；本服务暴露发票/订阅 API 并与 Stripe/LiteLLM 联动
 - 安全与弹性
   - 事件重试/退避（指数退避）、死信队列；请求幂等；
