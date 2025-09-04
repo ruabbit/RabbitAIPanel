@@ -126,10 +126,14 @@ Notes:
 - `GET /v1/reports/daily?user_id=1&date=2025-09-03` → 单日（UTC+8 窗口）聚合：`amount_cents`、`total_tokens`，返回 `request_id`。
 - `GET /v1/reports/summary?user_id=1&days=7` → 近 N 日（UTC+8 窗口）按日聚合：`amount_cents`、`total_tokens`，返回 `request_id` 与每日数组。
 - `GET /v1/reports/overdraft?user_id=1&days=7` → 近 N 日（UTC+8 窗口）溢出/透支事件列表（block 无 hints 情况会生成警报记录），返回 `request_id` 与事件详情。
-- `GET /v1/reports/period?user_id=1&date_from=2025-09-01&date_to=2025-09-03&model=gpt-4o&success=true&format=json|csv` → 账期聚合（UTC+8 窗口，支持按 `model`、`success` 过滤）：
+- `GET /v1/reports/period?user_id=1&date_from=2025-09-01&date_to=2025-09-03&model=gpt-4o&success=true&group_by=total|model|day|model_day&format=json|csv` → 账期聚合（UTC+8 窗口，支持按 `model`、`success` 过滤；并支持 `group_by` 分组导出）：
   - 字段：`usage_amount_cents`、`usage_tokens`、`topup_cents`、`refunds_cents`、`net_topup_cents`、`balance_delta_cents`，返回 `request_id`。
   - `format=csv` 返回 CSV（首行表头+一行数据）。
-- `GET /v1/reports/period_team?team_id=1&date_from=2025-09-01&date_to=2025-09-03&model=gpt-4o&success=true&format=json|csv` → 团队账期聚合（UTC+8 窗口，支持按 `model`、`success` 过滤）。
+  - 当 `group_by=model|day|model_day` 且 `format=csv` 时：
+    - `group_by=model` → 多行：`request_id,user_id,from,to,model,usage_amount_cents,usage_tokens`
+    - `group_by=day` → 多行：`request_id,user_id,from,to,date,usage_amount_cents,usage_tokens`
+    - `group_by=model_day` → 多行：`request_id,user_id,from,to,date,model,usage_amount_cents,usage_tokens`
+- `GET /v1/reports/period_team?team_id=1&date_from=2025-09-01&date_to=2025-09-03&model=gpt-4o&success=true&group_by=total|model|day|model_day&format=json|csv` → 团队账期聚合（UTC+8 窗口，支持按 `model`、`success` 过滤与 `group_by` 分组导出；CSV 表头同上，将 `user_id` 换为 `team_id`）。
 - `GET /v1/reports/budget?user_id=1` → 预算与额度总览：
   - `wallets`：用户钱包（多币种）余额与低阈值。
   - `daily_limit`：日限额计划（`daily_limit_cents`、`overflow_policy`、`reset_time`、`spent_today_cents`、`remaining_cents`、当前窗口 `window_start|end`）。

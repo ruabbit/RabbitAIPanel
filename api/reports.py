@@ -164,6 +164,7 @@ def period_team_report(
     date_to: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
     model: Optional[str] = Query(None, description="filter by model"),
     success: Optional[bool] = Query(None, description="filter by success flag"),
+    group_by: str = Query("total", pattern=r"^(total|model|day|model_day)$"),
     format: str = Query("json", pattern=r"^(json|csv)$"),
     ctx: dict = Depends(request_context),
 ):
@@ -181,15 +182,85 @@ def period_team_report(
     end = utc8_day_start(base_to, hhmm="00:00") + dt.timedelta(days=1)
 
     with _session() as s:
-        uq = s.query(
-            func.coalesce(func.sum(Usage.computed_amount_cents), 0),
-            func.coalesce(func.sum(Usage.total_tokens), 0),
-        ).filter(Usage.team_id == team_id, Usage.created_at >= start, Usage.created_at < end)
-        if model:
-            uq = uq.filter(Usage.model == model)
-        if success is not None:
-            uq = uq.filter(Usage.success == bool(success))
-        usage_amount_cents, usage_tokens = uq.one()
+        if group_by == "total":
+            uq = s.query(
+                func.coalesce(func.sum(Usage.computed_amount_cents), 0),
+                func.coalesce(func.sum(Usage.total_tokens), 0),
+            ).filter(Usage.team_id == team_id, Usage.created_at >= start, Usage.created_at < end)
+            if model:
+                uq = uq.filter(Usage.model == model)
+            if success is not None:
+                uq = uq.filter(Usage.success == bool(success))
+            usage_amount_cents, usage_tokens = uq.one()
+        else:
+            groups: list[dict] = []
+            def _sum_usage(filters) -> tuple[int, int]:
+                q = s.query(
+                    func.coalesce(func.sum(Usage.computed_amount_cents), 0),
+                    func.coalesce(func.sum(Usage.total_tokens), 0),
+                ).filter(*filters)
+                a, t = q.one()
+                return int(a or 0), int(t or 0)
+
+            models: list[str] = []
+            if group_by in ("model", "model_day"):
+                if model:
+                    models = [model]
+                else:
+                    mrows = (
+                        s.query(Usage.model)
+                        .filter(Usage.team_id == team_id, Usage.created_at >= start, Usage.created_at < end)
+                        .distinct()
+                        .all()
+                    )
+                    models = [r[0] for r in mrows]
+
+            if group_by == "model":
+                for m in models:
+                    filters = [Usage.team_id == team_id, Usage.created_at >= start, Usage.created_at < end, Usage.model == m]
+                    if success is not None:
+                        filters.append(Usage.success == bool(success))
+                    a, t = _sum_usage(filters)
+                    if a or t:
+                        groups.append({"model": m, "usage_amount_cents": a, "usage_tokens": t})
+            elif group_by == "day":
+                cur = start
+                while cur < end:
+                    day_end = cur + dt.timedelta(days=1)
+                    filters = [Usage.team_id == team_id, Usage.created_at >= cur, Usage.created_at < day_end]
+                    if model:
+                        filters.append(Usage.model == model)
+                    if success is not None:
+                        filters.append(Usage.success == bool(success))
+                    a, t = _sum_usage(filters)
+                    if a or t:
+                        groups.append({"date": (cur + dt.timedelta(hours=8)).strftime("%Y-%m-%d"), "usage_amount_cents": a, "usage_tokens": t})
+                    cur = day_end
+            elif group_by == "model_day":
+                cur = start
+                while cur < end:
+                    day_end = cur + dt.timedelta(days=1)
+                    for m in models:
+                        filters = [
+                            Usage.team_id == team_id,
+                            Usage.created_at >= cur,
+                            Usage.created_at < day_end,
+                            Usage.model == m,
+                        ]
+                        if success is not None:
+                            filters.append(Usage.success == bool(success))
+                        a, t = _sum_usage(filters)
+                        if a or t:
+                            groups.append({
+                                "date": (cur + dt.timedelta(hours=8)).strftime("%Y-%m-%d"),
+                                "model": m,
+                                "usage_amount_cents": a,
+                                "usage_tokens": t,
+                            })
+                    cur = day_end
+
+            usage_amount_cents = sum(g.get("usage_amount_cents", 0) for g in groups)
+            usage_tokens = sum(g.get("usage_tokens", 0) for g in groups)
 
         topup = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
             LagoPayment.team_id == team_id,
@@ -225,23 +296,72 @@ def period_team_report(
     }
 
     if format == "csv":
-        headers = [
-            "request_id",
-            "team_id",
-            "from",
-            "to",
-            "usage_amount_cents",
-            "usage_tokens",
-            "topup_cents",
-            "refunds_cents",
-            "net_topup_cents",
-            "balance_delta_cents",
-        ]
-        row = [str(data[k]) for k in headers]
-        csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
-        return PlainTextResponse(content=csv_text, media_type="text/csv")
+        if group_by == "total":
+            headers = [
+                "request_id",
+                "team_id",
+                "from",
+                "to",
+                "usage_amount_cents",
+                "usage_tokens",
+                "topup_cents",
+                "refunds_cents",
+                "net_topup_cents",
+                "balance_delta_cents",
+            ]
+            row = [str(data[k]) for k in headers]
+            csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
+            return PlainTextResponse(content=csv_text, media_type="text/csv")
+        else:
+            if group_by == "model":
+                headers = ["request_id", "team_id", "from", "to", "model", "usage_amount_cents", "usage_tokens"]
+                lines = [headers]
+                for g in groups:
+                    lines.append([
+                        str(ctx.get("request_id")),
+                        str(team_id),
+                        date_from,
+                        date_to,
+                        g["model"],
+                        str(g["usage_amount_cents"]),
+                        str(g["usage_tokens"]),
+                    ])
+            elif group_by == "day":
+                headers = ["request_id", "team_id", "from", "to", "date", "usage_amount_cents", "usage_tokens"]
+                lines = [headers]
+                for g in groups:
+                    lines.append([
+                        str(ctx.get("request_id")),
+                        str(team_id),
+                        date_from,
+                        date_to,
+                        g["date"],
+                        str(g["usage_amount_cents"]),
+                        str(g["usage_tokens"]),
+                    ])
+            else:  # model_day
+                headers = ["request_id", "team_id", "from", "to", "date", "model", "usage_amount_cents", "usage_tokens"]
+                lines = [headers]
+                for g in groups:
+                    lines.append([
+                        str(ctx.get("request_id")),
+                        str(team_id),
+                        date_from,
+                        date_to,
+                        g["date"],
+                        g["model"],
+                        str(g["usage_amount_cents"]),
+                        str(g["usage_tokens"]),
+                    ])
+            csv_text = "\n".join([",".join(row) for row in lines]) + "\n"
+            return PlainTextResponse(content=csv_text, media_type="text/csv")
 
-    return data
+    if group_by == "total":
+        return data
+    else:
+        data["groups"] = groups
+        data["group_by"] = group_by
+        return data
 
 
 @router.get("/summary")
@@ -299,6 +419,7 @@ def period_report(
     date_to: str = Query(..., description="YYYY-MM-DD (inclusive, UTC+8 window)"),
     model: Optional[str] = Query(None, description="filter by model"),
     success: Optional[bool] = Query(None, description="filter by success flag"),
+    group_by: str = Query("total", pattern=r"^(total|model|day|model_day)$"),
     format: str = Query("json", pattern=r"^(json|csv)$"),
     ctx: dict = Depends(request_context),
 ):
@@ -316,15 +437,88 @@ def period_report(
     end = utc8_day_start(base_to, hhmm="00:00") + dt.timedelta(days=1)
 
     with _session() as s:
-        uq = s.query(
-            func.coalesce(func.sum(Usage.computed_amount_cents), 0),
-            func.coalesce(func.sum(Usage.total_tokens), 0),
-        ).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end)
-        if model:
-            uq = uq.filter(Usage.model == model)
-        if success is not None:
-            uq = uq.filter(Usage.success == bool(success))
-        usage_amount_cents, usage_tokens = uq.one()
+        if group_by == "total":
+            uq = s.query(
+                func.coalesce(func.sum(Usage.computed_amount_cents), 0),
+                func.coalesce(func.sum(Usage.total_tokens), 0),
+            ).filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end)
+            if model:
+                uq = uq.filter(Usage.model == model)
+            if success is not None:
+                uq = uq.filter(Usage.success == bool(success))
+            usage_amount_cents, usage_tokens = uq.one()
+        else:
+            # grouped detail (usage-only)
+            groups: list[dict] = []
+            def _sum_usage(filters) -> tuple[int, int]:
+                q = s.query(
+                    func.coalesce(func.sum(Usage.computed_amount_cents), 0),
+                    func.coalesce(func.sum(Usage.total_tokens), 0),
+                ).filter(*filters)
+                a, t = q.one()
+                return int(a or 0), int(t or 0)
+
+            # model candidates
+            models: list[str] = []
+            if group_by in ("model", "model_day"):
+                if model:
+                    models = [model]
+                else:
+                    mrows = (
+                        s.query(Usage.model)
+                        .filter(Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end)
+                        .distinct()
+                        .all()
+                    )
+                    models = [r[0] for r in mrows]
+
+            if group_by == "model":
+                for m in models:
+                    filters = [Usage.user_id == user_id, Usage.created_at >= start, Usage.created_at < end, Usage.model == m]
+                    if success is not None:
+                        filters.append(Usage.success == bool(success))
+                    a, t = _sum_usage(filters)
+                    if a or t:
+                        groups.append({"model": m, "usage_amount_cents": a, "usage_tokens": t})
+            elif group_by == "day":
+                cur = start
+                while cur < end:
+                    day_end = cur + dt.timedelta(days=1)
+                    filters = [Usage.user_id == user_id, Usage.created_at >= cur, Usage.created_at < day_end]
+                    if model:
+                        filters.append(Usage.model == model)
+                    if success is not None:
+                        filters.append(Usage.success == bool(success))
+                    a, t = _sum_usage(filters)
+                    if a or t:
+                        groups.append({"date": (cur + dt.timedelta(hours=8)).strftime("%Y-%m-%d"), "usage_amount_cents": a, "usage_tokens": t})
+                    cur = day_end
+            elif group_by == "model_day":
+                cur = start
+                while cur < end:
+                    day_end = cur + dt.timedelta(days=1)
+                    for m in models:
+                        filters = [
+                            Usage.user_id == user_id,
+                            Usage.created_at >= cur,
+                            Usage.created_at < day_end,
+                            Usage.model == m,
+                        ]
+                        if success is not None:
+                            filters.append(Usage.success == bool(success))
+                        a, t = _sum_usage(filters)
+                        if a or t:
+                            groups.append({
+                                "date": (cur + dt.timedelta(hours=8)).strftime("%Y-%m-%d"),
+                                "model": m,
+                                "usage_amount_cents": a,
+                                "usage_tokens": t,
+                            })
+                    cur = day_end
+
+            # aggregate totals from groups
+            usage_amount_cents = sum(g.get("usage_amount_cents", 0) for g in groups)
+            usage_tokens = sum(g.get("usage_tokens", 0) for g in groups)
 
         topup = s.query(func.coalesce(func.sum(LagoPayment.amount_cents), 0)).filter(
             LagoPayment.user_id == user_id,
@@ -360,21 +554,70 @@ def period_report(
     }
 
     if format == "csv":
-        # simple CSV header + one row
-        headers = [
-            "request_id",
-            "user_id",
-            "from",
-            "to",
-            "usage_amount_cents",
-            "usage_tokens",
-            "topup_cents",
-            "refunds_cents",
-            "net_topup_cents",
-            "balance_delta_cents",
-        ]
-        row = [str(data[k]) for k in headers]
-        csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
-        return PlainTextResponse(content=csv_text, media_type="text/csv")
+        if group_by == "total":
+            headers = [
+                "request_id",
+                "user_id",
+                "from",
+                "to",
+                "usage_amount_cents",
+                "usage_tokens",
+                "topup_cents",
+                "refunds_cents",
+                "net_topup_cents",
+                "balance_delta_cents",
+            ]
+            row = [str(data[k]) for k in headers]
+            csv_text = ",".join(headers) + "\n" + ",".join(row) + "\n"
+            return PlainTextResponse(content=csv_text, media_type="text/csv")
+        else:
+            # grouped detail (usage-only)
+            if group_by == "model":
+                headers = ["request_id", "user_id", "from", "to", "model", "usage_amount_cents", "usage_tokens"]
+                lines = [headers]
+                for g in groups:
+                    lines.append([
+                        str(ctx.get("request_id")),
+                        str(user_id),
+                        date_from,
+                        date_to,
+                        g["model"],
+                        str(g["usage_amount_cents"]),
+                        str(g["usage_tokens"]),
+                    ])
+            elif group_by == "day":
+                headers = ["request_id", "user_id", "from", "to", "date", "usage_amount_cents", "usage_tokens"]
+                lines = [headers]
+                for g in groups:
+                    lines.append([
+                        str(ctx.get("request_id")),
+                        str(user_id),
+                        date_from,
+                        date_to,
+                        g["date"],
+                        str(g["usage_amount_cents"]),
+                        str(g["usage_tokens"]),
+                    ])
+            else:  # model_day
+                headers = ["request_id", "user_id", "from", "to", "date", "model", "usage_amount_cents", "usage_tokens"]
+                lines = [headers]
+                for g in groups:
+                    lines.append([
+                        str(ctx.get("request_id")),
+                        str(user_id),
+                        date_from,
+                        date_to,
+                        g["date"],
+                        g["model"],
+                        str(g["usage_amount_cents"]),
+                        str(g["usage_tokens"]),
+                    ])
+            csv_text = "\n".join([",".join(row) for row in lines]) + "\n"
+            return PlainTextResponse(content=csv_text, media_type="text/csv")
 
-    return data
+    if group_by == "total":
+        return data
+    else:
+        data["groups"] = groups
+        data["group_by"] = group_by
+        return data
