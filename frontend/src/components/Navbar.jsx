@@ -39,6 +39,7 @@ export default function Navbar() {
         <nav className="flex items-center gap-4">
           <Link to="/dashboard" className={`text-sm ${location.pathname === '/dashboard' ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>用户后台</Link>
           <Link to="/admin" className={`text-sm ${location.pathname === '/admin' ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>管理后台</Link>
+          <Link to="/proxy" className={`text-sm ${location.pathname === '/proxy' ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>代理测试</Link>
           <button onClick={() => setOpen(true)} className="inline-flex items-center text-gray-600 hover:text-primary"><FiSettings className="mr-1" />配置</button>
           <button onClick={onLogin} className="inline-flex items-center bg-primary text-white px-3 py-1.5 rounded hover:bg-primary-dark"><FiLogIn className="mr-1"/>使用社交登录</button>
         </nav>
@@ -75,4 +76,3 @@ export default function Navbar() {
     </header>
   )
 }
-
