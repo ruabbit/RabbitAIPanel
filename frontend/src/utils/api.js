@@ -257,3 +257,60 @@ export async function getOverdraftReport({ userId, days = 7 }) {
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
+
+// ===== Billing basic
+export async function createCustomer({ entityType, entityId, stripeCustomerId }) {
+  const res = await fetch(`${API_BASE}/v1/billing/customers`, {
+    method: 'POST', headers: headers(), body: JSON.stringify({ entity_type: entityType, entity_id: entityId, stripe_customer_id: stripeCustomerId })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function createSubscription({ customerId, planId, stripeSubscriptionId }) {
+  const res = await fetch(`${API_BASE}/v1/billing/subscriptions`, {
+    method: 'POST', headers: headers(), body: JSON.stringify({ customer_id: customerId, plan_id: planId, stripe_subscription_id: stripeSubscriptionId })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getInvoice(invoiceId) {
+  const res = await fetch(`${API_BASE}/v1/billing/invoices/${encodeURIComponent(invoiceId)}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getSubscription(subscriptionId) {
+  const res = await fetch(`${API_BASE}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getSubscriptionByStripe(stripeSubscriptionId) {
+  const res = await fetch(`${API_BASE}/v1/billing/subscriptions/by_stripe/${encodeURIComponent(stripeSubscriptionId)}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+// ===== Plans assignment
+export async function getAssignment({ entityType, entityId }) {
+  const res = await fetch(`${API_BASE}/v1/plans/assignment/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+// ===== Team report
+export async function getTeamPeriod({ teamId, dateFrom, dateTo, model, success, groupBy = 'total', format = 'json' }) {
+  const params = new URLSearchParams()
+  params.set('team_id', teamId)
+  params.set('date_from', dateFrom)
+  params.set('date_to', dateTo)
+  params.set('group_by', groupBy)
+  params.set('format', format)
+  if (model) params.set('model', model)
+  if (typeof success === 'boolean') params.set('success', success ? 'true' : 'false')
+  const res = await fetch(`${API_BASE}/v1/reports/period_team?${params.toString()}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return format === 'csv' ? res.text() : res.json()
+}

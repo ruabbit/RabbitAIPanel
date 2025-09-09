@@ -57,6 +57,74 @@ export default function Admin() {
   const [queryPlanId, setQueryPlanId] = useState('')
   const [queriedPlan, setQueriedPlan] = useState(null)
 
+  // create customer/subscription
+  const [custEntityType, setCustEntityType] = useState('user')
+  const [custEntityId, setCustEntityId] = useState('1')
+  const [custStripeId, setCustStripeId] = useState('')
+  const [createdCustomerId, setCreatedCustomerId] = useState('')
+  const [subPlanId, setSubPlanId] = useState('')
+  const [subStripeId, setSubStripeId] = useState('')
+  const createCust = async () => {
+    setLoading(true); setErr('')
+    try { const res = await createCustomer({ entityType: custEntityType, entityId: Number(custEntityId), stripeCustomerId: custStripeId || undefined }); setCreatedCustomerId(String(res.customer_id)); alert(`customer_id=${res.customer_id}`) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+  const createSub = async () => {
+    setLoading(true); setErr('')
+    try { const res = await createSubscription({ customerId: Number(createdCustomerId || customerId), planId: Number(subPlanId), stripeSubscriptionId: subStripeId || undefined }); alert(`subscription created`) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  // query invoice/subscription
+  const [qInvoiceId, setQInvoiceId] = useState('')
+  const [qInvoice, setQInvoice] = useState(null)
+  const [qSubId, setQSubId] = useState('')
+  const [qSubStripeId, setQSubStripeId] = useState('')
+  const [qSub, setQSub] = useState(null)
+  const queryInvoice = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getInvoice(Number(qInvoiceId)); setQInvoice(res.invoice || null) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+  const querySub = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getSubscription(Number(qSubId)); setQSub(res.subscription || null) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+  const querySubByStripe = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getSubscriptionByStripe(qSubStripeId); setQSub(res.subscription || null) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  // assignment query
+  const [assEntityType, setAssEntityType] = useState('user')
+  const [assEntityId, setAssEntityId] = useState('1')
+  const [assignment, setAssignment] = useState(null)
+  const onGetAssignment = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getAssignment({ entityType: assEntityType, entityId: Number(assEntityId) }); setAssignment(res.assignment || null) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  // wallets/ledger
+  const [wlUserId, setWlUserId] = useState('1')
+  const [wallets, setWallets] = useState(null)
+  const [ledger, setLedger] = useState(null)
+  const loadWallets = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getWallets(Number(wlUserId)); setWallets(res.wallets || []) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+  const loadLedger = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getLedger(Number(wlUserId)); setLedger(res.entries || []) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  // team period
+  const [teamId, setTeamId] = useState('1')
+  const [tpFrom, setTpFrom] = useState('2025-09-01')
+  const [tpTo, setTpTo] = useState('2025-09-03')
+  const [tpGroup, setTpGroup] = useState('total')
+  const [teamPeriod, setTeamPeriod] = useState(null)
+  const loadTeamPeriod = async () => {
+    setLoading(true); setErr('')
+    try { const res = await getTeamPeriod({ teamId, dateFrom: tpFrom, dateTo: tpTo, groupBy: tpGroup }); setTeamPeriod(res) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
   const loadSubs = async () => {
     setLoading(true); setErr('')
     try { const res = await listSubscriptions({ customerId, planId }); setSubs(res.subscriptions || []) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
@@ -383,6 +451,47 @@ export default function Admin() {
         </div>
 
         <div className="border rounded p-4">
+          <div className="font-semibold mb-3">创建 Customer / Subscription（测试）</div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">entity_type</label>
+              <select className="w-full border rounded px-3 py-2" value={custEntityType} onChange={e => setCustEntityType(e.target.value)}>
+                <option value="user">user</option>
+                <option value="team">team</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">entity_id</label>
+              <input className="w-full border rounded px-3 py-2" value={custEntityId} onChange={e => setCustEntityId(e.target.value)} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">stripe_customer_id（可选）</label>
+              <input className="w-full border rounded px-3 py-2" value={custStripeId} onChange={e => setCustStripeId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={createCust} className="bg-primary text-white px-4 py-2 rounded w-full">创建 Customer</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">customer_id（留空用上面创建）</label>
+              <input className="w-full border rounded px-3 py-2" value={createdCustomerId || customerId} onChange={e => setCreatedCustomerId(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">plan_id</label>
+              <input className="w-full border rounded px-3 py-2" value={subPlanId} onChange={e => setSubPlanId(e.target.value)} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">stripe_subscription_id（可选）</label>
+              <input className="w-full border rounded px-3 py-2" value={subStripeId} onChange={e => setSubStripeId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={createSub} className="border px-4 py-2 rounded w-full">创建 Subscription</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="border rounded p-4">
           <div className="font-semibold mb-3">Stripe Ensure（可选）</div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
@@ -409,6 +518,138 @@ export default function Admin() {
               <button onClick={onEnsureSubscriptionByPlan} className="border px-4 py-2 rounded w-full">Ensure by Plan</button>
             </div>
           </div>
+        </div>
+
+        <div className="border rounded p-4">
+          <div className="font-semibold mb-3">查询发票/订阅</div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">invoice_id</label>
+              <input className="w-full border rounded px-3 py-2" value={qInvoiceId} onChange={e => setQInvoiceId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={queryInvoice} className="border px-4 py-2 rounded w-full">查询发票</button>
+            </div>
+          </div>
+          {qInvoice && (
+            <pre className="text-xs bg-gray-50 border rounded p-3 mb-3 overflow-auto">{JSON.stringify(qInvoice, null, 2)}</pre>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">subscription_id</label>
+              <input className="w-full border rounded px-3 py-2" value={qSubId} onChange={e => setQSubId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={querySub} className="border px-4 py-2 rounded w-full">查询订阅</button>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">stripe_subscription_id</label>
+              <input className="w-full border rounded px-3 py-2" value={qSubStripeId} onChange={e => setQSubStripeId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={querySubByStripe} className="border px-4 py-2 rounded w-full">通过 Stripe ID 查询</button>
+            </div>
+          </div>
+          {qSub && (
+            <pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(qSub, null, 2)}</pre>
+          )}
+        </div>
+
+        <div className="border rounded p-4">
+          <div className="font-semibold mb-3">Plan 分配查询 / Wallets & Ledger</div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">assignment entity_type</label>
+              <select className="w-full border rounded px-3 py-2" value={assEntityType} onChange={e => setAssEntityType(e.target.value)}>
+                <option value="user">user</option>
+                <option value="team">team</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">assignment entity_id</label>
+              <input className="w-full border rounded px-3 py-2" value={assEntityId} onChange={e => setAssEntityId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={onGetAssignment} className="border px-4 py-2 rounded w-full">查询分配</button>
+            </div>
+          </div>
+          {assignment && (
+            <pre className="text-xs bg-gray-50 border rounded p-3 mb-3 overflow-auto">{JSON.stringify(assignment, null, 2)}</pre>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">wallet user_id</label>
+              <input className="w-full border rounded px-3 py-2" value={wlUserId} onChange={e => setWlUserId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={loadWallets} className="border px-4 py-2 rounded w-full">加载钱包</button>
+            </div>
+            <div className="flex items-end">
+              <button onClick={loadLedger} className="border px-4 py-2 rounded w-full">加载流水</button>
+            </div>
+          </div>
+          {(wallets && wallets.length > 0) && (
+            <div className="mb-3">
+              <div className="font-semibold mb-1">Wallets</div>
+              <ul className="text-sm text-gray-700 list-disc pl-5">
+                {wallets.map((w, i) => (
+                  <li key={i}>{w.currency}: {w.balance_cents}¢</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {(ledger && ledger.length > 0) && (
+            <div className="overflow-auto">
+              <table className="min-w-full border text-sm">
+                <thead className="bg-gray-100">
+                  <tr><th className="p-2 border">created_at</th><th className="p-2 border">currency</th><th className="p-2 border">amount_cents</th><th className="p-2 border">reason</th></tr>
+                </thead>
+                <tbody>
+                  {ledger.map((l, i) => (
+                    <tr key={i} className="odd:bg-white even:bg-gray-50">
+                      <td className="p-2 border">{l.created_at}</td>
+                      <td className="p-2 border">{l.currency}</td>
+                      <td className="p-2 border">{l.amount_cents}</td>
+                      <td className="p-2 border">{l.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="border rounded p-4">
+          <div className="font-semibold mb-3">团队账期（period_team）</div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">team_id</label>
+              <input className="w-full border rounded px-3 py-2" value={teamId} onChange={e => setTeamId(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">date_from</label>
+              <input className="w-full border rounded px-3 py-2" value={tpFrom} onChange={e => setTpFrom(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">date_to</label>
+              <input className="w-full border rounded px-3 py-2" value={tpTo} onChange={e => setTpTo(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">group_by</label>
+              <select className="w-full border rounded px-3 py-2" value={tpGroup} onChange={e => setTpGroup(e.target.value)}>
+                <option value="total">total</option>
+                <option value="model">model</option>
+                <option value="day">day</option>
+                <option value="model_day">model_day</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button onClick={loadTeamPeriod} className="border px-4 py-2 rounded w-full">加载团队账期</button>
+            </div>
+          </div>
+          {teamPeriod && (
+            <pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(teamPeriod, null, 2)}</pre>
+          )}
         </div>
 
         <div className="border rounded p-4">
