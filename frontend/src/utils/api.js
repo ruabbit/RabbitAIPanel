@@ -236,3 +236,24 @@ export async function deletePriceMapping({ mappingId }) {
   return res.json()
 }
 
+// ===== Additional reports
+export async function getDailyReport({ userId, date }) {
+  const params = new URLSearchParams(); params.set('user_id', userId); params.set('date', date)
+  const res = await fetch(`${API_BASE}/v1/reports/daily?${params.toString()}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getSummaryReport({ userId, days = 7 }) {
+  const params = new URLSearchParams(); params.set('user_id', userId); params.set('days', String(days))
+  const res = await fetch(`${API_BASE}/v1/reports/summary?${params.toString()}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getOverdraftReport({ userId, days = 7 }) {
+  const params = new URLSearchParams(); params.set('user_id', userId); params.set('days', String(days))
+  const res = await fetch(`${API_BASE}/v1/reports/overdraft?${params.toString()}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}

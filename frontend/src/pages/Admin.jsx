@@ -173,6 +173,22 @@ export default function Admin() {
     try { await deletePriceMapping({ mappingId: Number(pmMappingId) }); alert('映射已删除'); await loadMappings() } catch (e) { setErr(String(e)) } finally { setLoading(false) }
   }
 
+  // Stripe ensure forms
+  const onEnsureCustomer = async () => {
+    setLoading(true); setErr('')
+    try { const res = await ensureStripeCustomer({ customerId }); alert(`stripe_customer_id=${res.stripe_customer_id || 'ok'}`) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+  const [ensurePlanId, setEnsurePlanId] = useState('')
+  const [ensurePriceId, setEnsurePriceId] = useState('')
+  const onEnsureSubscription = async () => {
+    setLoading(true); setErr('')
+    try { const res = await ensureStripeSubscription({ customerId, planId: Number(ensurePlanId || 0), stripePriceId: ensurePriceId }); alert(`stripe_subscription_id=${res.stripe_subscription_id}`) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+  const onEnsureSubscriptionByPlan = async () => {
+    setLoading(true); setErr('')
+    try { const res = await ensureStripeSubscriptionByPlan({ customerId, planId: Number(ensurePlanId || 0) }); alert(`stripe_subscription_id=${res.stripe_subscription_id}`) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800">管理后台</h2>
@@ -362,6 +378,35 @@ export default function Admin() {
             </div>
             <div className="flex items-end">
               <button onClick={onPushInvoice} className="border px-4 py-2 rounded w-full">推送至 Stripe</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="border rounded p-4">
+          <div className="font-semibold mb-3">Stripe Ensure（可选）</div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">customer_id</label>
+              <input className="w-full border rounded px-3 py-2" value={customerId} onChange={e => setCustomerId(e.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <button onClick={onEnsureCustomer} className="border px-4 py-2 rounded w-full">Ensure Customer</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">plan_id</label>
+              <input className="w-full border rounded px-3 py-2" value={ensurePlanId} onChange={e => setEnsurePlanId(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">stripe_price_id</label>
+              <input className="w-full border rounded px-3 py-2" value={ensurePriceId} onChange={e => setEnsurePriceId(e.target.value)} placeholder="可选：直接用 price id" />
+            </div>
+            <div className="flex items-end">
+              <button onClick={onEnsureSubscription} className="border px-4 py-2 rounded w-full">Ensure Subscription</button>
+            </div>
+            <div className="flex items-end">
+              <button onClick={onEnsureSubscriptionByPlan} className="border px-4 py-2 rounded w-full">Ensure by Plan</button>
             </div>
           </div>
         </div>

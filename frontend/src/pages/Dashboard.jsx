@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { getBudget, getPeriod } from '../utils/api'
+import { getBudget, getPeriod, getDailyReport, getSummaryReport, getOverdraftReport } from '../utils/api'
 
 export default function Dashboard() {
   const [userId, setUserId] = useState(localStorage.getItem('dev_user_id') || '1')
@@ -11,6 +11,12 @@ export default function Dashboard() {
   const [dateTo, setDateTo] = useState('2025-09-03')
   const [groupBy, setGroupBy] = useState('total')
   const [period, setPeriod] = useState(null)
+  const [dailyDate, setDailyDate] = useState('2025-09-03')
+  const [daily, setDaily] = useState(null)
+  const [sumDays, setSumDays] = useState(7)
+  const [summary, setSummary] = useState(null)
+  const [odDays, setOdDays] = useState(7)
+  const [overdraft, setOverdraft] = useState(null)
 
   const loadBudget = async () => {
     setLoading(true); setErr('')
@@ -45,6 +51,21 @@ export default function Dashboard() {
     } catch (e) {
       alert(`下载失败: ${e}`)
     }
+  }
+
+  const loadDaily = async () => {
+    setLoading(true); setErr('')
+    try { const data = await getDailyReport({ userId, date: dailyDate }); setDaily(data) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  const loadSummary = async () => {
+    setLoading(true); setErr('')
+    try { const data = await getSummaryReport({ userId, days: Number(sumDays) }); setSummary(data) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  const loadOverdraft = async () => {
+    setLoading(true); setErr('')
+    try { const data = await getOverdraftReport({ userId, days: Number(odDays) }); setOverdraft(data) } catch (e) { setErr(String(e)) } finally { setLoading(false) }
   }
 
   return (
@@ -147,6 +168,96 @@ export default function Dashboard() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded shadow p-6 space-y-4">
+        <div className="font-semibold">每日汇总（daily）</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">date</label>
+            <input className="w-full border rounded px-3 py-2" value={dailyDate} onChange={e => setDailyDate(e.target.value)} />
+          </div>
+          <div className="flex items-end">
+            <button onClick={loadDaily} className="border px-4 py-2 rounded w-full">加载 daily</button>
+          </div>
+        </div>
+        {daily && (
+          <div className="text-sm text-gray-700">金额：{daily.amount_cents}¢，代币：{daily.total_tokens}</div>
+        )}
+      </div>
+
+      <div className="bg-white rounded shadow p-6 space-y-4">
+        <div className="font-semibold">近 N 日汇总（summary）</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">days</label>
+            <input className="w-full border rounded px-3 py-2" value={sumDays} onChange={e => setSumDays(e.target.value)} />
+          </div>
+          <div className="flex items-end">
+            <button onClick={loadSummary} className="border px-4 py-2 rounded w-full">加载 summary</button>
+          </div>
+        </div>
+        {summary && (
+          <div className="overflow-auto">
+            <table className="min-w-full border text-sm">
+              <thead className="bg-gray-100">
+                <tr><th className="p-2 border">date</th><th className="p-2 border">amount_cents</th><th className="p-2 border">total_tokens</th></tr>
+              </thead>
+              <tbody>
+                {(summary.daily || []).map((d, i) => (
+                  <tr key={i} className="odd:bg-white even:bg-gray-50">
+                    <td className="p-2 border">{d.date}</td>
+                    <td className="p-2 border">{d.amount_cents}</td>
+                    <td className="p-2 border">{d.total_tokens}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded shadow p-6 space-y-4">
+        <div className="font-semibold">透支/溢出事件（overdraft）</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">days</label>
+            <input className="w-full border rounded px-3 py-2" value={odDays} onChange={e => setOdDays(e.target.value)} />
+          </div>
+          <div className="flex items-end">
+            <button onClick={loadOverdraft} className="border px-4 py-2 rounded w-full">加载 overdraft</button>
+          </div>
+        </div>
+        {overdraft && (
+          <div className="overflow-auto">
+            <table className="min-w-full border text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 border">created_at</th>
+                  <th className="p-2 border">model</th>
+                  <th className="p-2 border">request_id</th>
+                  <th className="p-2 border">overflow_policy</th>
+                  <th className="p-2 border">final_amount_cents</th>
+                  <th className="p-2 border">charged_amount_cents</th>
+                  <th className="p-2 border">remaining_before_cents</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(overdraft.overdrafts || []).map((r, i) => (
+                  <tr key={i} className="odd:bg-white even:bg-gray-50">
+                    <td className="p-2 border">{r.created_at}</td>
+                    <td className="p-2 border">{r.model}</td>
+                    <td className="p-2 border">{r.request_id}</td>
+                    <td className="p-2 border">{r.overflow_policy}</td>
+                    <td className="p-2 border">{r.final_amount_cents}</td>
+                    <td className="p-2 border">{r.charged_amount_cents}</td>
+                    <td className="p-2 border">{r.remaining_before_cents}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
