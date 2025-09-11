@@ -39,15 +39,15 @@ export default function Hero() {
         <div className="bg-white pt-16 lg:col-span-7 lg:bg-transparent lg:pt-0 lg:pl-16 xl:pl-20">
           <div className="mx-auto px-4 sm:px-6 md:max-w-2xl md:px-4 lg:px-0">
             <h1 className="font-display text-5xl font-extrabold text-slate-900 sm:text-6xl">
-              Get lost in the world of icon design.
+              RabbitRelay — 官方体验，网络更稳更快
             </h1>
-            <p className="mt-4 text-3xl text-slate-600">
-              A book and video course that teaches you how to design your own
-              icons from scratch.
+            <p className="mt-4 text-2xl sm:text-3xl text-slate-600">
+              为用户提供稳定、安全、优惠的 Claude Code、Codex、Gemini CLI、Gork Code 等，使用体验与直连官网完全相同。
+              确保使用官方原版安装包，仅优化网络，不做其他任何处理。
             </p>
             <div className="mt-8 flex gap-4">
-              <Button href="#free-chapters" color="blue">Get sample chapter</Button>
-              <Button href="#pricing" variant="outline" color="blue">Buy book</Button>
+              <Button href="#free-chapters" color="blue">立即开始</Button>
+              <Button href="#pricing" variant="outline" color="blue">了解价格</Button>
             </div>
           </div>
         </div>
@@ -55,4 +55,3 @@ export default function Hero() {
     </header>
   )
 }
-

@@ -41,7 +41,7 @@ export default function Navbar() {
           <button className="inline-flex items-center text-gray-600 hover:text-primary" onClick={()=>setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
             <FiMenu className="text-xl" />
           </button>
-          <Link to="/" className="text-xl font-semibold text-gray-800">Rabbit Panel</Link>
+          <Link to="/" className="text-xl font-semibold text-gray-800">RabbitRelay</Link>
         </div>
         <nav className="flex items-center gap-4">
           <Link to="/dashboard" className={`text-sm ${location.pathname.startsWith('/dashboard') ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>用户后台</Link>

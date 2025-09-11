@@ -41,17 +41,16 @@ export default function Pricing() {
   return (
     <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-14 pt-16 pb-8 sm:scroll-mt-32 sm:pt-20 sm:pb-10 lg:pt-32 lg:pb-16">
       <Container>
-        <SectionHeading number="04" id="pricing-title">Pricing</SectionHeading>
-        <p className="mt-8 font-display text-5xl font-extrabold tracking-tight text-slate-900 sm:text-6xl">Pick your package</p>
-        <p className="mt-4 max-w-xl text-lg tracking-tight text-slate-600">“Everything Starts as a Square” is available in two different packages so you can pick the one that’s right for you.</p>
+        <SectionHeading number="04" id="pricing-title">价格</SectionHeading>
+        <p className="mt-8 font-display text-5xl font-extrabold tracking-tight text-slate-900 sm:text-6xl">选择适合你的方案</p>
+        <p className="mt-4 max-w-xl text-lg tracking-tight text-slate-600">更优惠的网络成本与透明计费，让个人与团队都能轻松使用。</p>
       </Container>
       <div className="mx-auto mt-16 max-w-5xl lg:px-6">
         <div className="grid bg-slate-50 sm:px-6 sm:pb-16 md:grid-cols-2 md:rounded-[3rem] md:px-8 md:pt-16 lg:p-20">
-          <Plan name="Essential" description="The perfect starting point if you’re on a budget." price="15" href="#" features={[ 'The 240-page ebook', 'Figma icon templates', 'Community access' ]} />
-          <Plan featured name="Complete" description="Everything icon resource you could ever ask for." price="229" href="#" features={[ 'The 240-page ebook', 'Figma icon templates', 'Over an hour of screencasts', 'Weekly icon teardowns', 'Community access' ]} />
+          <Plan name="基础版" description="个人与小团队的理想选择。" price="—" href="#" features={[ '官方原版安装包', '智能网络优化（标准）', '一致使用体验' ]} />
+          <Plan featured name="专业版" description="更高可用与更优线路策略。" price="—" href="#" features={[ '官方原版安装包', '智能网络优化（高级）', '多区域线路与自动切换', '更优网络成本' ]} />
         </div>
       </div>
     </section>
   )
 }
-

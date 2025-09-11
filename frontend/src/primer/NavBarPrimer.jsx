@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 const sections = [
-  { id: 'table-of-contents', title: 'Contents' },
-  { id: 'screencasts', title: 'Screencasts' },
-  { id: 'resources', title: 'Resources' },
-  { id: 'pricing', title: 'Pricing' },
-  { id: 'author', title: 'Author' },
+  { id: 'table-of-contents', title: '功能概览' },
+  { id: 'screencasts', title: '演示' },
+  { id: 'resources', title: '特性' },
+  { id: 'pricing', title: '价格' },
+  { id: 'author', title: '关于我们' },
 ]
 
 export default function NavBarPrimer() {

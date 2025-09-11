@@ -4,16 +4,16 @@ import SectionHeading from './SectionHeading'
 
 export default function TableOfContents() {
   const items = [
-    { num: '01', title: 'Overview', desc: 'What Rabbit Panel solves and how it fits your stack.' },
-    { num: '02', title: 'Screencasts', desc: 'Short demos: proxy, metering, plans, invoices.' },
-    { num: '03', title: 'Resources', desc: 'APIs, SDKs, and integration snippets.' },
-    { num: '04', title: 'Pricing', desc: 'Simple plan model with flexible rules.' },
-    { num: '05', title: 'Author', desc: 'Team and roadmap.' },
+    { num: '01', title: '功能概览', desc: 'RabbitRelay 的核心价值与适用场景。' },
+    { num: '02', title: '演示', desc: '安装、选择产品、开启加速、更新回滚。' },
+    { num: '03', title: '特性', desc: '官方原版安装包、智能网络优化、安全与隐私。' },
+    { num: '04', title: '价格', desc: '更优惠的网络成本与透明计费。' },
+    { num: '05', title: '关于我们', desc: '团队与愿景。' },
   ]
   return (
     <section id="table-of-contents" className="pt-16 pb-10 sm:pt-20 sm:pb-14 lg:pt-28 lg:pb-16">
       <Container>
-        <SectionHeading number="01">Table of contents</SectionHeading>
+        <SectionHeading number="01">目录</SectionHeading>
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((it) => (
             <a key={it.num} href={`#${it.title.toLowerCase()}`} className="group rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition-shadow">
@@ -30,4 +30,3 @@ export default function TableOfContents() {
     </section>
   )
 }
-
