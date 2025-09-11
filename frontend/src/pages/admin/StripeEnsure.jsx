@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
 import { ensureStripeCustomer, ensureStripeSubscription, ensureStripeSubscriptionByPlan } from '../../utils/api'
+import Container from '../../primer/Container'
+import SectionHeading from '../../primer/SectionHeading'
+import Button from '../../primer/Button'
 
 export default function StripeEnsure() {
   const [customerId, setCustomerId] = useState('1')
@@ -10,19 +13,21 @@ export default function StripeEnsure() {
   const ensureSub = async () => { setMsg(''); try { const res = await ensureStripeSubscription({ customerId, planId: Number(planId), stripePriceId: priceId }); setMsg(`subscription: ${res.stripe_subscription_id}`) } catch(e){ setMsg(String(e)) } }
   const ensureByPlan = async () => { setMsg(''); try { const res = await ensureStripeSubscriptionByPlan({ customerId, planId: Number(planId) }); setMsg(`subscription(by plan): ${res.stripe_subscription_id}`) } catch(e){ setMsg(String(e)) } }
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <input className="border rounded px-3 py-2" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
-        <button onClick={ensureCustomer} className="border px-4 py-2 rounded">Ensure Customer</button>
+    <Container size="lg">
+      <SectionHeading number="B4">Stripe Ensure</SectionHeading>
+      <div className="mt-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <input className="border rounded px-3 py-2" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
+          <Button onClick={ensureCustomer} variant="outline" color="blue">Ensure Customer</Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
+          <input className="border rounded px-3 py-2" value={priceId} onChange={e=>setPriceId(e.target.value)} placeholder="stripe_price_id（可选）" />
+          <Button onClick={ensureSub} variant="outline" color="blue">Ensure Subscription</Button>
+          <Button onClick={ensureByPlan} variant="outline" color="blue">Ensure by Plan</Button>
+        </div>
+        {msg && <div className="text-sm text-gray-700">{msg}</div>}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
-        <input className="border rounded px-3 py-2" value={priceId} onChange={e=>setPriceId(e.target.value)} placeholder="stripe_price_id（可选）" />
-        <button onClick={ensureSub} className="border px-4 py-2 rounded">Ensure Subscription</button>
-        <button onClick={ensureByPlan} className="border px-4 py-2 rounded">Ensure by Plan</button>
-      </div>
-      {msg && <div className="text-sm text-gray-700">{msg}</div>}
-    </div>
+    </Container>
   )
 }
-
