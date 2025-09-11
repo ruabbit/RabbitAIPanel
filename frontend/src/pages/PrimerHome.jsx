@@ -14,10 +14,9 @@ import FooterPrim from '../primer/FooterPrim'
 export default function PrimerHome() {
   return (
     <>
-      <NavBarPrimer />
-      <div className="h-12 sm:h-32" />
       <Hero />
       <Introduction />
+      <NavBarPrimer />
       <TableOfContents />
       <Screencasts />
       <Resources />
