@@ -1,19 +1,3 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    './index.html',
-    './src/**/*.{js,jsx,ts,tsx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          DEFAULT: '#0ea5e9',
-          dark: '#0284c7',
-        },
-      },
-    },
-  },
-  plugins: [],
-}
-
+// Tailwind CSS v4 uses CSS-first configuration via @theme in your CSS.
+// This JS config is no longer required, kept empty to avoid confusion.
+export default {}
