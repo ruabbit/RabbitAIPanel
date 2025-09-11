@@ -2,7 +2,13 @@ import React from 'react'
 import Hero from '../primer/Hero'
 import Introduction from '../primer/Introduction'
 import NavBarPrimer from '../primer/NavBarPrimer'
+import TableOfContents from '../primer/TableOfContents'
+import Screencasts from '../primer/Screencasts'
+import Resources from '../primer/Resources'
 import Pricing from '../primer/Pricing'
+import Testimonials from '../primer/Testimonials'
+import Author from '../primer/Author'
+import FreeChapters from '../primer/FreeChapters'
 import FooterPrim from '../primer/FooterPrim'
 
 export default function PrimerHome() {
@@ -11,14 +17,14 @@ export default function PrimerHome() {
       <Hero />
       <Introduction />
       <NavBarPrimer />
-      {/* Placeholder sections for anchors */}
-      <section id="table-of-contents" className="py-20"><div className="mx-auto max-w-4xl px-4 text-slate-600">Table of contents placeholder…</div></section>
-      <section id="screencasts" className="py-20"><div className="mx-auto max-w-4xl px-4 text-slate-600">Screencasts placeholder…</div></section>
-      <section id="resources" className="py-20"><div className="mx-auto max-w-4xl px-4 text-slate-600">Resources placeholder…</div></section>
+      <TableOfContents />
+      <Screencasts />
+      <Resources />
       <Pricing />
-      <section id="author" className="py-20"><div className="mx-auto max-w-4xl px-4 text-slate-600">Author placeholder…</div></section>
+      <Testimonials />
+      <Author />
+      <FreeChapters />
       <FooterPrim />
     </>
   )
 }
-
