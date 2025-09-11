@@ -27,3 +27,6 @@ coverage.xml
 
 # Serena internal state
 .serena/
+
+# Ignore local template examples
+example/
