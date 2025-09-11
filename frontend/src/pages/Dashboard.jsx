@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { getBudget, getPeriod, getDailyReport, getSummaryReport, getOverdraftReport } from '../utils/api'
+import Button from '../primer/Button'
 
 export default function Dashboard() {
   const [userId, setUserId] = useState(localStorage.getItem('dev_user_id') || '1')
@@ -79,7 +80,7 @@ export default function Dashboard() {
             <input className="w-full border rounded px-3 py-2" value={userId} onChange={e => setUserId(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <button onClick={loadBudget} className="bg-primary text-white px-4 py-2 rounded w-full">加载预算总览</button>
+            <Button onClick={loadBudget} color="blue" className="w-full">加载预算总览</Button>
           </div>
         </div>
         {loading && <div className="text-sm text-gray-500">加载中…</div>}
@@ -135,10 +136,10 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="flex items-end">
-            <button onClick={loadPeriod} className="bg-primary text-white px-4 py-2 rounded w-full">加载账期汇总</button>
+            <Button onClick={loadPeriod} color="blue" className="w-full">加载账期汇总</Button>
           </div>
           <div className="flex items-end">
-            <button onClick={downloadPeriodCsv} className="border px-4 py-2 rounded w-full">下载 CSV</button>
+            <Button onClick={downloadPeriodCsv} variant="outline" color="blue" className="w-full">下载 CSV</Button>
           </div>
         </div>
         {period && (
@@ -180,7 +181,7 @@ export default function Dashboard() {
             <input className="w-full border rounded px-3 py-2" value={dailyDate} onChange={e => setDailyDate(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <button onClick={loadDaily} className="border px-4 py-2 rounded w-full">加载 daily</button>
+            <Button onClick={loadDaily} variant="outline" color="blue" className="w-full">加载 daily</Button>
           </div>
         </div>
         {daily && (
@@ -196,7 +197,7 @@ export default function Dashboard() {
             <input className="w-full border rounded px-3 py-2" value={sumDays} onChange={e => setSumDays(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <button onClick={loadSummary} className="border px-4 py-2 rounded w-full">加载 summary</button>
+            <Button onClick={loadSummary} variant="outline" color="blue" className="w-full">加载 summary</Button>
           </div>
         </div>
         {summary && (
@@ -227,7 +228,7 @@ export default function Dashboard() {
             <input className="w-full border rounded px-3 py-2" value={odDays} onChange={e => setOdDays(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <button onClick={loadOverdraft} className="border px-4 py-2 rounded w-full">加载 overdraft</button>
+            <Button onClick={loadOverdraft} variant="outline" color="blue" className="w-full">加载 overdraft</Button>
           </div>
         </div>
         {overdraft && (

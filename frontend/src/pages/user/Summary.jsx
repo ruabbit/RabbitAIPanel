@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { getSummaryReport } from '../../utils/api'
+import Button from '../../primer/Button'
 
 export default function Summary() {
   const [userId, setUserId] = useState(localStorage.getItem('dev_user_id') || '1')
@@ -18,7 +19,7 @@ export default function Summary() {
       <div className="flex gap-2">
         <input className="border rounded px-3 py-2" value={userId} onChange={e=>setUserId(e.target.value)} />
         <input className="border rounded px-3 py-2" value={days} onChange={e=>setDays(e.target.value)} />
-        <button onClick={load} className="bg-primary text-white px-3 py-2 rounded">加载</button>
+        <Button onClick={load} color="blue">加载</Button>
       </div>
       {loading && <div className="text-sm text-gray-500">加载中…</div>}
       {err && <div className="text-sm text-red-600">{err}</div>}
@@ -42,4 +43,3 @@ export default function Summary() {
       )}
     </div>
   )}
-

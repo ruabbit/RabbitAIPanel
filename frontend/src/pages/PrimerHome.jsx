@@ -15,8 +15,8 @@ export default function PrimerHome() {
   return (
     <>
       <Hero />
-      <Introduction />
       <NavBarPrimer />
+      <Introduction />
       <TableOfContents />
       <Screencasts />
       <Resources />

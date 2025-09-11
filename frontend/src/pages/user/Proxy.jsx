@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { chatCompletions } from '../../utils/api'
+import Button from '../../primer/Button'
 
 export default function Proxy() {
   const [model, setModel] = useState('gpt-4o-mini')
@@ -33,7 +34,7 @@ export default function Proxy() {
         <textarea className="w-full border rounded px-3 py-2" rows={4} value={prompt} onChange={e=>setPrompt(e.target.value)} />
       </div>
       <div className="flex gap-2">
-        <button onClick={onSend} className="bg-primary text-white px-4 py-2 rounded">发送</button>
+        <Button onClick={onSend} color="blue">发送</Button>
         {loading && <span className="text-sm text-gray-500">请求中…</span>}
       </div>
       {err && <div className="text-sm text-red-600">{err}</div>}
@@ -41,4 +42,3 @@ export default function Proxy() {
     </div>
   )
 }
-

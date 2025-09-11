@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { getPeriod } from '../../utils/api'
+import Button from '../../primer/Button'
 
 export default function Period() {
   const [userId, setUserId] = useState(localStorage.getItem('dev_user_id') || '1')
@@ -37,8 +38,8 @@ export default function Period() {
           <option value="model_day">model_day</option>
         </select>
         <div className="flex gap-2">
-          <button onClick={load} className="bg-primary text-white px-3 py-2 rounded">加载</button>
-          <button onClick={download} className="border px-3 py-2 rounded">CSV</button>
+          <Button onClick={load} color="blue">加载</Button>
+          <Button onClick={download} variant="outline" color="blue">CSV</Button>
         </div>
       </div>
       {loading && <div className="text-sm text-gray-500">加载中…</div>}
@@ -75,4 +76,3 @@ export default function Period() {
     </div>
   )
 }
-
