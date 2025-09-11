@@ -23,8 +23,8 @@ export default function Sidebar({ items = [], title = '', open = false, onClose 
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <div className="hidden md:block h-full">{Nav}</div>
+      {/* Desktop sidebar: toggle visibility using `open` */}
+      {open && <div className="hidden md:block h-full">{Nav}</div>}
       {/* Mobile overlay */}
       {open && (
         <div className="md:hidden fixed inset-0 z-40">

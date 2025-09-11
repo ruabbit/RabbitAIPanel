@@ -38,7 +38,7 @@ export default function Navbar() {
     <header className="bg-white border-b">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button className="md:hidden inline-flex items-center text-gray-600 hover:text-primary" onClick={()=>setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+          <button className="inline-flex items-center text-gray-600 hover:text-primary" onClick={()=>setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
             <FiMenu className="text-xl" />
           </button>
           <Link to="/" className="text-xl font-semibold text-gray-800">Rabbit Panel</Link>
