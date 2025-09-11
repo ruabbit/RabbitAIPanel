@@ -1,7 +1,9 @@
 import React from 'react'
 import Sidebar from '../../components/Sidebar'
+import { useUI } from '../../context/UIContext'
 
 export default function UserLayout({ children }) {
+  const { sidebarOpen, setSidebarOpen } = useUI()
   const items = [
     { label: '概览', to: '/dashboard/overview' },
     { label: '账期汇总', to: '/dashboard/period' },
@@ -13,10 +15,9 @@ export default function UserLayout({ children }) {
     { label: '代理测试', to: '/dashboard/proxy' },
   ]
   return (
-    <div className="min-h-[70vh] grid grid-cols-[16rem_1fr] gap-0">
-      <Sidebar items={items} title="用户后台" />
-      <div className="p-6">{children}</div>
+    <div className="min-h-[70vh] grid md:grid-cols-[16rem_1fr] grid-cols-1 gap-0">
+      <Sidebar items={items} title="用户后台" open={sidebarOpen} onClose={()=>setSidebarOpen(false)} />
+      <div className="p-4 md:p-6">{children}</div>
     </div>
   )
 }
-

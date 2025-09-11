@@ -10,7 +10,7 @@ export default function Home() {
   ]
 
   return (
-    <div>
+    <div className="container mx-auto px-4">
       <section className="text-center py-16">
         <h1 className="text-4xl font-extrabold text-gray-800">AI API 代理与计费一体化</h1>
         <p className="mt-4 text-gray-600">（文案占位）Claude/ChatGPT API 中转服务 · 官方 API 直连 · 成本降低 87% · 可用性 99.99%</p>
@@ -32,4 +32,3 @@ export default function Home() {
     </div>
   )
 }
-

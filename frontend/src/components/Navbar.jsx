@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { FiSettings, FiUser, FiLogIn } from 'react-icons/fi'
+import { FiSettings, FiLogIn, FiMenu } from 'react-icons/fi'
+import { useUI } from '../context/UIContext'
 import { startSocialLogin } from '../utils/api'
 
 export default function Navbar() {
+  const { sidebarOpen, setSidebarOpen } = useUI()
   const [open, setOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [devUserId, setDevUserId] = useState('1')
@@ -35,7 +37,12 @@ export default function Navbar() {
   return (
     <header className="bg-white border-b">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-xl font-semibold text-gray-800">Rabbit Panel</Link>
+        <div className="flex items-center gap-3">
+          <button className="md:hidden inline-flex items-center text-gray-600 hover:text-primary" onClick={()=>setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+            <FiMenu className="text-xl" />
+          </button>
+          <Link to="/" className="text-xl font-semibold text-gray-800">Rabbit Panel</Link>
+        </div>
         <nav className="flex items-center gap-4">
           <Link to="/dashboard" className={`text-sm ${location.pathname.startsWith('/dashboard') ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>用户后台</Link>
           <Link to="/admin" className={`text-sm ${location.pathname.startsWith('/admin') ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>管理后台</Link>

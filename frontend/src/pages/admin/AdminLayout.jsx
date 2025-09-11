@@ -1,7 +1,9 @@
 import React from 'react'
 import Sidebar from '../../components/Sidebar'
+import { useUI } from '../../context/UIContext'
 
 export default function AdminLayout({ children }) {
+  const { sidebarOpen, setSidebarOpen } = useUI()
   const items = [
     { label: '计划-创建', to: '/admin/plan/create' },
     { label: '计划-日限额', to: '/admin/plan/daily' },
@@ -17,10 +19,9 @@ export default function AdminLayout({ children }) {
     { label: '团队账期', to: '/admin/team-period' },
   ]
   return (
-    <div className="min-h-[70vh] grid grid-cols-[16rem_1fr] gap-0">
-      <Sidebar items={items} title="管理后台" />
-      <div className="p-6">{children}</div>
+    <div className="min-h-[70vh] grid md:grid-cols-[16rem_1fr] grid-cols-1 gap-0">
+      <Sidebar items={items} title="管理后台" open={sidebarOpen} onClose={()=>setSidebarOpen(false)} />
+      <div className="p-4 md:p-6">{children}</div>
     </div>
   )
 }
-
