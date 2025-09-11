@@ -15,7 +15,7 @@ export default function UserLayout({ children }) {
     { label: '代理测试', to: '/dashboard/proxy' },
   ]
   return (
-    <div className={`grid grid-cols-1 ${sidebarOpen ? 'md:grid-cols-[16rem_1fr]' : 'md:grid-cols-1'} gap-0`}>
+    <div className={`grid grid-cols-1 ${sidebarOpen ? 'md:grid-cols-[16rem_1fr]' : 'md:grid-cols-1'} gap-0 min-h-full`}>
       <Sidebar items={items} title="用户后台" open={sidebarOpen} onClose={()=>setSidebarOpen(false)} />
       <div className="p-4 md:p-6">{children}</div>
     </div>

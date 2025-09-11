@@ -36,7 +36,7 @@ export default function Navbar() {
 
   return (
     <header className="bg-white border-b">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="w-full px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button className="inline-flex items-center text-gray-600 hover:text-primary" onClick={()=>setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
             <FiMenu className="text-xl" />
