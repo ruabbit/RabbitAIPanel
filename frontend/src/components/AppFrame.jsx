@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { FiMenu, FiBell, FiHome, FiUsers, FiFolder, FiCalendar, FiFileText, FiPieChart, FiSettings, FiChevronDown, FiX } from 'react-icons/fi'
+import { FiMenu, FiBell, FiHome, FiUsers, FiFolder, FiCalendar, FiFileText, FiPieChart, FiSettings, FiChevronDown, FiX, FiLogIn } from 'react-icons/fi'
+import DevSettingsModal from './DevSettingsModal'
+import { startSocialLogin } from '../utils/api'
 
 function navIcon(name) {
   switch (name) {
@@ -17,6 +19,8 @@ function navIcon(name) {
 
 export default function AppFrame({ title = '', items = [], children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [devOpen, setDevOpen] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
   const location = useLocation()
 
   const Sidebar = (
@@ -89,6 +93,26 @@ export default function AppFrame({ title = '', items = [], children }) {
           <div className="flex flex-1 items-center justify-between">
             <div className="text-sm font-medium text-gray-700">{title}</div>
             <div className="flex items-center gap-x-4">
+              <button type="button" className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900" onClick={() => setDevOpen(true)}>
+                <FiSettings className="size-5" />
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-500"
+                onClick={async () => {
+                  try {
+                    setLoginLoading(true)
+                    const provider = localStorage.getItem('social_provider') || 'google'
+                    const { redirect_to } = await startSocialLogin(provider)
+                    if (redirect_to) window.location.href = redirect_to
+                  } catch (e) {
+                    alert(`启动登录失败: ${e}`)
+                  } finally { setLoginLoading(false) }
+                }}
+                disabled={loginLoading}
+              >
+                <FiLogIn className="mr-1" />{loginLoading ? '登录中…' : '使用社交登录'}
+              </button>
               <button type="button" className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500" aria-label="Notifications">
                 <FiBell className="size-5" />
               </button>
@@ -106,7 +130,8 @@ export default function AppFrame({ title = '', items = [], children }) {
           </div>
         </main>
       </div>
+
+      <DevSettingsModal open={devOpen} onClose={() => setDevOpen(false)} />
     </div>
   )
 }
-
