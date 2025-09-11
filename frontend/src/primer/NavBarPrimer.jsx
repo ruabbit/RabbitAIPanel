@@ -63,7 +63,7 @@ export default function NavBarPrimer() {
   const current = sections[activeIndex] || sections[0]
 
   return (
-      <div ref={navRef} className="fixed inset-x-0 top-0 z-50" style={{ opacity, transform: `translateY(${(1 - opacity) * 8}px)`, transition: 'opacity 200ms ease, transform 200ms ease', pointerEvents: opacity > 0.05 ? 'auto' : 'none' }}>
+      <div ref={navRef} className="fixed inset-x-0 top-0 z-50" style={{ opacity, transform: `translateY(${-(1 - opacity) * 12}px)`, transition: 'opacity 220ms ease-out, transform 220ms ease-out', pointerEvents: opacity > 0.05 ? 'auto' : 'none' }}>
       {/* Mobile */}
       <div className="sm:hidden relative flex items-center px-4 py-3 bg-white/95 shadow-sm [@supports(backdrop-filter:blur(0))]:bg-white/80 [@supports(backdrop-filter:blur(0))]:backdrop-blur-sm">
         <span aria-hidden className="font-mono text-sm text-blue-600">
