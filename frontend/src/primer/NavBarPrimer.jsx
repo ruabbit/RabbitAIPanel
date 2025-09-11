@@ -43,7 +43,7 @@ export default function NavBarPrimer() {
   const current = sections[activeIndex] || sections[0]
 
   return (
-    <div ref={navRef} className="sticky top-0 z-50">
+    <div ref={navRef} className="fixed inset-x-0 top-0 z-50">
       {/* Mobile */}
       <div className="sm:hidden relative flex items-center px-4 py-3 bg-white/95 shadow-sm [@supports(backdrop-filter:blur(0))]:bg-white/80 [@supports(backdrop-filter:blur(0))]:backdrop-blur-sm">
         <span aria-hidden className="font-mono text-sm text-blue-600">
