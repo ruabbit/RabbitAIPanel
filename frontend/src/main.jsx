@@ -4,6 +4,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import App from './App'
 import Home from './pages/Home'
+import PrimerHome from './pages/PrimerHome'
+import PrimerPreview from './pages/PrimerPreview'
 import AuthCallback from './pages/AuthCallback'
 
 // user dashboard (refactor to multiple pages with sidebar)
@@ -37,7 +39,8 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <Home /> },
+      { index: true, element: <PrimerHome /> },
+      { path: 'primer/preview', element: <PrimerPreview /> },
       {
         path: 'dashboard',
         element: <UserLayout />,
