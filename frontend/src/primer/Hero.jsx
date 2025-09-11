@@ -11,12 +11,12 @@ function Testimonial() {
       </div>
       <blockquote className="mt-2">
         <p className="font-display text-xl font-medium text-slate-900">
-          “This method of designing icons is genius. I wish I had known this
-          method a lot sooner.”
+          “官方原版安装包 + 仅网络优化，体验和直连官网一模一样。
+          海外网络也稳定很多，团队协作顺畅了。”
         </p>
       </blockquote>
       <figcaption className="mt-2 text-sm text-slate-500">
-        <strong className="font-semibold text-blue-600 before:content-['—_']">Stacey Solomon</strong>, Founder at Retail Park
+        <strong className="font-semibold text-blue-600 before:content-['—_']">叶峻</strong>，后端工程师
       </figcaption>
     </figure>
   )
@@ -38,8 +38,10 @@ export default function Hero() {
         </div>
         <div className="bg-white pt-16 lg:col-span-7 lg:bg-transparent lg:pt-0 lg:pl-16 xl:pl-20">
           <div className="mx-auto px-4 sm:px-6 md:max-w-2xl md:px-4 lg:px-0">
-            <h1 className="font-display text-5xl font-extrabold text-slate-900 sm:text-6xl">
-              RabbitRelay — 官方体验，网络更稳更快
+            <h1 className="font-display text-5xl font-extrabold text-slate-900 sm:text-6xl leading-tight">
+              <span className="block">RabbitRelay</span>
+              <span className="block">官方体验</span>
+              <span className="block">网络更稳更快</span>
             </h1>
             <p className="mt-4 text-2xl sm:text-3xl text-slate-600">
               为用户提供稳定、安全、优惠的 Claude Code、Codex、Gemini CLI、Gork Code 等，使用体验与直连官网完全相同。
