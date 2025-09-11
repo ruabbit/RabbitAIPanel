@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
 
@@ -28,7 +28,7 @@ class PaymentEvent:
     currency: str
     provider_txn_id: str
     event_id: str | None = None
-    raw: dict[str, Any]
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

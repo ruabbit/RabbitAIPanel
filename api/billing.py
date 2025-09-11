@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from .server import dev_auth
+from .deps import dev_auth
 from middleware.billing.service import create_customer, create_subscription, generate_invoice
 from middleware.billing.service import ensure_stripe_customer, ensure_stripe_subscription, push_invoice_to_stripe
 from middleware.billing.service import get_invoice, list_invoices

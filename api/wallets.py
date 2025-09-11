@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from middleware.db import SessionLocal
 from middleware.models import Wallet, LedgerEntry
-from .server import dev_auth
+from .deps import dev_auth
 
 
 router = APIRouter(prefix="/v1/wallets", tags=["wallets"])

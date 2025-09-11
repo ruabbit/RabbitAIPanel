@@ -8,7 +8,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from .server import request_context
+from .deps import request_context
 from middleware.db import SessionLocal
 from middleware.models import Usage, OverdraftAlert, Wallet, ApiKey
 from middleware.lago.service import LagoPayment

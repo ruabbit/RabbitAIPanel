@@ -136,13 +136,15 @@ curl -i http://127.0.0.1:8000/healthz
 
 ## 5. 构建与运行前端
 
-### 5.1 配置前端 API 基址
+### 5.1 配置前端 API 基址（很重要）
 
 创建 `frontend/.env`：
 
 ```bash
 cat >/opt/mw/frontend/.env <<'EOF'
-VITE_API_BASE=http://127.0.0.1:8000
+# 若从本机浏览器访问服务器，请使用服务器对外 IP + 8000 端口
+# 例如：VITE_API_BASE=http://100.110.0.229:8000
+VITE_API_BASE=http://100.110.0.229:8000
 EOF
 ```
 
@@ -155,7 +157,17 @@ npm run build
 npm run preview -- --host 0.0.0.0 --port 5173
 ```
 
-前端预览默认监听 5173 端口。浏览器访问：`http://<服务器IP>:5173/`（首页、后台、代理测试都可浏览）
+前端预览默认监听 5173 端口。浏览器访问：`http://<服务器IP>:5173/`（首页、用户后台、管理后台都有左侧导航的多页布局）。
+
+注意：不要直接访问 `http://<服务器IP>:5173/v1/...` 这样的路径，这会命中前端静态服务器的单页路由返回空白页。所有 API 请求将由前端调用 `VITE_API_BASE` 指向的后端地址（如 `http://<服务器IP>:8000`）。
+
+（可选）开发阶段也可以使用 Vite 开发服务器代理（非 preview 模式）：
+
+```bash
+# 编辑 frontend/vite.config.js，取消 proxy 中 '/v1' 与 '/auth' 的注释
+npm run dev
+# 然后访问 http://<服务器IP>:5173/，前端对 /v1 与 /auth 的请求会被代理到后端 8000 端口
+```
 
 （可选）生产可用 Nginx/ Caddy 提供静态站点，以及反向代理到后端 8000 端口。
 
@@ -187,4 +199,3 @@ npm run preview -- --host 0.0.0.0 --port 5173
 - Logto：提供 tenant 与 client/secret、connector_target_id 后，后端会打通社交绑定与资料回填完整链路。
 - Stripe：提供 secret key/webhook secret 后，可测试 ensure、推送发票与回调处理。
 - 生产化：使用 systemd/Nginx/Caddy、TLS、集中式限流（Redis/网关）、Docker 化后端等。
-

@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 
-from .server import dev_auth
+from .deps import dev_auth
 from middleware.config import settings
 from middleware.plans.service import estimate_cost_for_tokens, check_daily_limit, record_usage_row, get_daily_limit_status, record_overdraft_alert, has_today_overdraft, get_degrade_fallback
 from middleware.integrations.lago_stub import record_usage

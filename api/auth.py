@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from .server import dev_auth, request_context
+from .deps import dev_auth, request_context
 from middleware.config import settings
 from middleware.integrations.logto_mgmt import (
     create_temp_user,

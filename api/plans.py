@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from .server import dev_auth
+from .deps import dev_auth
 from middleware.plans.service import (
     create_plan,
     upsert_daily_limit,
