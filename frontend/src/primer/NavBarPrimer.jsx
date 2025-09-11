@@ -11,16 +11,27 @@ const sections = [
 export default function NavBarPrimer() {
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [opacity, setOpacity] = useState(0)
   const navRef = useRef(null)
-  const [fixed, setFixed] = useState(false)
-  const [navHeight, setNavHeight] = useState(0)
-  const [navTop, setNavTop] = useState(0)
+  const triggerRef = useRef({ bottom: 300 })
 
   useEffect(() => {
     const ids = sections.map((s) => s.id)
     const els = ids
       .map((id) => document.getElementById(id))
       .filter((el) => el != null)
+
+    function measureTrigger() {
+      const intro = document.getElementById('introduction')
+      if (intro) {
+        const rect = intro.getBoundingClientRect()
+        triggerRef.current = { bottom: rect.bottom + window.scrollY }
+      } else {
+        triggerRef.current = { bottom: 300 }
+      }
+    }
+
+    function clamp(n, min, max) { return Math.max(min, Math.min(max, n)) }
 
     function onScroll() {
       if (!navRef.current) return
@@ -32,33 +43,27 @@ export default function NavBarPrimer() {
         if (fromTop >= rectTop) idx = i
       }
       setActiveIndex(idx)
-      setFixed(window.scrollY >= navTop)
-      setNavHeight(barH)
+
+      const start = triggerRef.current.bottom - 100
+      const end = start + 200
+      const p = clamp((window.scrollY - start) / (end - start), 0, 1)
+      setOpacity(p)
     }
 
-    function measure() {
-      if (!navRef.current) return
-      const rectTop = navRef.current.getBoundingClientRect().top + window.scrollY
-      setNavTop(rectTop)
-      setNavHeight(navRef.current.offsetHeight || 0)
-      onScroll()
-    }
-
-    measure()
+    measureTrigger()
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', measure)
+    window.addEventListener('resize', () => { measureTrigger(); onScroll() })
     return () => {
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', measure)
+      window.removeEventListener('resize', () => { measureTrigger(); onScroll() })
     }
   }, [])
 
   const current = sections[activeIndex] || sections[0]
 
   return (
-    <div className="relative">
-      {fixed && <div style={{ height: navHeight }} />}
-      <div ref={navRef} className={fixed ? 'fixed inset-x-0 top-0 z-50' : 'sticky top-0 z-50'}>
+      <div ref={navRef} className="fixed inset-x-0 top-0 z-50" style={{ opacity, transform: `translateY(${(1 - opacity) * 8}px)`, transition: 'opacity 200ms ease, transform 200ms ease', pointerEvents: opacity > 0.05 ? 'auto' : 'none' }}>
       {/* Mobile */}
       <div className="sm:hidden relative flex items-center px-4 py-3 bg-white/95 shadow-sm [@supports(backdrop-filter:blur(0))]:bg-white/80 [@supports(backdrop-filter:blur(0))]:backdrop-blur-sm">
         <span aria-hidden className="font-mono text-sm text-blue-600">
@@ -102,7 +107,6 @@ export default function NavBarPrimer() {
             </li>
           ))}
         </ol>
-      </div>
       </div>
     </div>
   )
