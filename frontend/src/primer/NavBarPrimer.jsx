@@ -12,6 +12,9 @@ export default function NavBarPrimer() {
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const navRef = useRef(null)
+  const [fixed, setFixed] = useState(false)
+  const [navHeight, setNavHeight] = useState(0)
+  const [navTop, setNavTop] = useState(0)
 
   useEffect(() => {
     const ids = sections.map((s) => s.id)
@@ -29,21 +32,33 @@ export default function NavBarPrimer() {
         if (fromTop >= rectTop) idx = i
       }
       setActiveIndex(idx)
+      setFixed(window.scrollY >= navTop)
+      setNavHeight(barH)
     }
 
-    onScroll()
+    function measure() {
+      if (!navRef.current) return
+      const rectTop = navRef.current.getBoundingClientRect().top + window.scrollY
+      setNavTop(rectTop)
+      setNavHeight(navRef.current.offsetHeight || 0)
+      onScroll()
+    }
+
+    measure()
     window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
+    window.addEventListener('resize', measure)
     return () => {
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
+      window.removeEventListener('resize', measure)
     }
   }, [])
 
   const current = sections[activeIndex] || sections[0]
 
   return (
-    <div ref={navRef} className="sticky top-0 z-50">
+    <div className="relative">
+      {fixed && <div style={{ height: navHeight }} />}
+      <div ref={navRef} className={fixed ? 'fixed inset-x-0 top-0 z-50' : 'sticky top-0 z-50'}>
       {/* Mobile */}
       <div className="sm:hidden relative flex items-center px-4 py-3 bg-white/95 shadow-sm [@supports(backdrop-filter:blur(0))]:bg-white/80 [@supports(backdrop-filter:blur(0))]:backdrop-blur-sm">
         <span aria-hidden className="font-mono text-sm text-blue-600">
@@ -87,6 +102,7 @@ export default function NavBarPrimer() {
             </li>
           ))}
         </ol>
+      </div>
       </div>
     </div>
   )
