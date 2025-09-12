@@ -3,6 +3,7 @@ import { listPriceMappings, createPriceMapping, updatePriceMapping, deletePriceM
 import Container from '../../primer/Container'
 import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
+import Card from '../../primer/Card'
 
 export default function PriceMappings() {
   const [planId, setPlanId] = useState('')
@@ -29,11 +30,12 @@ export default function PriceMappings() {
     <Container size="lg">
       <SectionHeading number="A7">价格映射</SectionHeading>
       <div className="mt-6 space-y-4">
+        <Card>
         <div className="flex gap-2">
           <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id (用于列表)" />
           <Button onClick={load} variant="outline" color="blue">加载映射</Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <input className="border rounded px-3 py-2" value={pmPlanId} onChange={e=>setPmPlanId(e.target.value)} placeholder="plan_id" />
           <input className="border rounded px-3 py-2" value={pmCurrency} onChange={e=>setPmCurrency(e.target.value)} placeholder="currency" />
           <input className="border rounded px-3 py-2" value={pmPriceId} onChange={e=>setPmPriceId(e.target.value)} placeholder="stripe_price_id" />
@@ -43,13 +45,13 @@ export default function PriceMappings() {
           </select>
           <Button onClick={create} color="blue">创建</Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <input className="border rounded px-3 py-2" value={pmMappingId} onChange={e=>setPmMappingId(e.target.value)} placeholder="mapping_id" />
           <Button onClick={update} variant="outline" color="blue">更新</Button>
           <Button onClick={del} variant="outline" color="blue">删除</Button>
         </div>
         {mappings && mappings.length > 0 && (
-          <div className="overflow-auto">
+          <div className="overflow-auto mt-4">
             <table className="min-w-full border text-sm">
               <thead className="bg-gray-100"><tr><th className="p-2 border">id</th><th className="p-2 border">plan_id</th><th className="p-2 border">currency</th><th className="p-2 border">stripe_price_id</th><th className="p-2 border">active</th></tr></thead>
               <tbody>
@@ -66,7 +68,8 @@ export default function PriceMappings() {
             </table>
           </div>
         )}
-        {msg && <div className="text-sm text-gray-700">{msg}</div>}
+        {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
+        </Card>
       </div>
     </Container>
   )

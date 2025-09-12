@@ -3,6 +3,7 @@ import { getTeamPeriod } from '../../utils/api'
 import Container from '../../primer/Container'
 import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
+import Card from '../../primer/Card'
 
 export default function TeamPeriod() {
   const [teamId, setTeamId] = useState('1')
@@ -16,6 +17,7 @@ export default function TeamPeriod() {
     <Container size="lg">
       <SectionHeading number="B5">团队账期</SectionHeading>
       <div className="mt-6 space-y-4">
+        <Card>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <input className="border rounded px-3 py-2" value={teamId} onChange={e=>setTeamId(e.target.value)} placeholder="team_id" />
           <input className="border rounded px-3 py-2" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} placeholder="date_from" />
@@ -28,8 +30,9 @@ export default function TeamPeriod() {
           </select>
           <Button onClick={load} variant="outline" color="blue">加载</Button>
         </div>
-        {data && (<pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(data, null, 2)}</pre>)}
-        {msg && <div className="text-sm text-gray-700">{msg}</div>}
+        {data && (<pre className="mt-3 text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(data, null, 2)}</pre>)}
+        {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
+        </Card>
       </div>
     </Container>
   )

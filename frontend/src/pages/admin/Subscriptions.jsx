@@ -3,6 +3,7 @@ import { createSubscription, listSubscriptions, getSubscription, getSubscription
 import Container from '../../primer/Container'
 import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
+import Card from '../../primer/Card'
 
 export default function Subscriptions() {
   const [customerId, setCustomerId] = useState('1')
@@ -29,6 +30,7 @@ export default function Subscriptions() {
     <Container size="lg">
       <SectionHeading number="B2">订阅</SectionHeading>
       <div className="mt-6 space-y-4">
+        <Card>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <input className="border rounded px-3 py-2" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
           <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
@@ -54,14 +56,15 @@ export default function Subscriptions() {
             </table>
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <input className="border rounded px-3 py-2" value={qId} onChange={e=>setQId(e.target.value)} placeholder="subscription_id" />
           <Button onClick={onQuery} variant="outline" color="blue">查询</Button>
           <input className="border rounded px-3 py-2" value={qStripe} onChange={e=>setQStripe(e.target.value)} placeholder="stripe_subscription_id" />
           <Button onClick={onQueryStripe} variant="outline" color="blue">按 Stripe ID 查询</Button>
         </div>
         {qRes && (<pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(qRes, null, 2)}</pre>)}
-        {msg && <div className="text-sm text-gray-700">{msg}</div>}
+        {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
+        </Card>
       </div>
     </Container>
   )

@@ -3,6 +3,7 @@ import { createPlan, updatePlanMeta } from '../../utils/api'
 import Container from '../../primer/Container'
 import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
+import Card from '../../primer/Card'
 
 export default function PlanCreate() {
   const [name, setName] = useState('Test Plan')
@@ -33,21 +34,23 @@ export default function PlanCreate() {
     <Container size="md">
       <SectionHeading number="A1">计划 - 创建</SectionHeading>
       <div className="mt-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={name} onChange={e=>setName(e.target.value)} placeholder="name" />
-          <select className="border rounded px-3 py-2" value={type} onChange={e=>setType(e.target.value)}>
-            <option value="daily_limit">daily_limit</option>
-            <option value="usage">usage</option>
-          </select>
-          <input className="border rounded px-3 py-2" value={currency} onChange={e=>setCurrency(e.target.value)} placeholder="currency" />
-          <input className="border rounded px-3 py-2 md:col-span-2" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='meta JSON' />
-        </div>
-        <div className="flex gap-2 items-center">
-          <Button onClick={onCreate} color="blue">创建 Plan</Button>
-          <Button onClick={onUpdateMeta} variant="outline" color="blue">更新 Meta</Button>
-          <span className="text-sm text-gray-500">plan_id: {planId || '(未创建)'}</span>
-        </div>
-        {msg && <div className="text-sm text-gray-700">{msg}</div>}
+        <Card>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <input className="border rounded px-3 py-2" value={name} onChange={e=>setName(e.target.value)} placeholder="name" />
+            <select className="border rounded px-3 py-2" value={type} onChange={e=>setType(e.target.value)}>
+              <option value="daily_limit">daily_limit</option>
+              <option value="usage">usage</option>
+            </select>
+            <input className="border rounded px-3 py-2" value={currency} onChange={e=>setCurrency(e.target.value)} placeholder="currency" />
+            <input className="border rounded px-3 py-2 md:col-span-2" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='meta JSON' />
+          </div>
+          <div className="mt-4 flex gap-2 items-center">
+            <Button onClick={onCreate} color="blue">创建 Plan</Button>
+            <Button onClick={onUpdateMeta} variant="outline" color="blue">更新 Meta</Button>
+            <span className="text-sm text-gray-500">plan_id: {planId || '(未创建)'}</span>
+          </div>
+          {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
+        </Card>
       </div>
     </Container>
   )
