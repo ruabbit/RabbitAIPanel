@@ -4,7 +4,6 @@ import Container from '../../primer/Container'
 import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import { currentUserId } from '../../utils/dev'
-import Button from '../../primer/Button'
 
 export default function Proxy() {
   const [model, setModel] = useState('gpt-4o-mini')
