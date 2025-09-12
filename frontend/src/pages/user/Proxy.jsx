@@ -1,10 +1,15 @@
 import React, { useState } from 'react'
 import { chatCompletions } from '../../utils/api'
+import Container from '../../primer/Container'
+import SectionHeading from '../../primer/SectionHeading'
+import Button from '../../primer/Button'
+import { currentUserId } from '../../utils/dev'
 import Button from '../../primer/Button'
 
 export default function Proxy() {
   const [model, setModel] = useState('gpt-4o-mini')
   const [apiKey, setApiKey] = useState(localStorage.getItem('litellm_api_key') || '')
+  const userId = currentUserId('1')
   const [prompt, setPrompt] = useState('Hello!')
   const [resp, setResp] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -25,20 +30,22 @@ export default function Proxy() {
     } catch (e) { setErr(String(e)) } finally { setLoading(false) }
   }
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <Container>
+      <SectionHeading number="U8">代理测试</SectionHeading>
+      <div className="mt-2 text-sm text-slate-700">当前用户ID：<strong>{userId}</strong></div>
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <input className="border rounded px-3 py-2" value={model} onChange={e=>setModel(e.target.value)} />
         <input className="border rounded px-3 py-2" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="x-litellm-api-key" />
       </div>
-      <div>
+      <div className="mt-3">
         <textarea className="w-full border rounded px-3 py-2" rows={4} value={prompt} onChange={e=>setPrompt(e.target.value)} />
       </div>
-      <div className="flex gap-2">
+      <div className="mt-3 flex gap-2 items-center">
         <Button onClick={onSend} color="blue">发送</Button>
         {loading && <span className="text-sm text-gray-500">请求中…</span>}
       </div>
-      {err && <div className="text-sm text-red-600">{err}</div>}
-      {resp && (<pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(resp, null, 2)}</pre>)}
-    </div>
+      {err && <div className="text-sm text-red-600 mt-2">{err}</div>}
+      {resp && (<pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto mt-3">{JSON.stringify(resp, null, 2)}</pre>)}
+    </Container>
   )
 }

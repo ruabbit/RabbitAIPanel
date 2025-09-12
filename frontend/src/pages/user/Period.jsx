@@ -1,9 +1,13 @@
 import React, { useState } from 'react'
 import { getPeriod } from '../../utils/api'
 import Button from '../../primer/Button'
+import Container from '../../primer/Container'
+import SectionHeading from '../../primer/SectionHeading'
+import { currentUserId } from '../../utils/dev'
 
 export default function Period() {
-  const [userId, setUserId] = useState(localStorage.getItem('dev_user_id') || '1')
+  const [userId, setUserId] = useState(currentUserId('1'))
+  const [advanced, setAdvanced] = useState(false)
   const [dateFrom, setDateFrom] = useState('2025-09-01')
   const [dateTo, setDateTo] = useState('2025-09-03')
   const [groupBy, setGroupBy] = useState('total')
@@ -26,9 +30,14 @@ export default function Period() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <input className="border rounded px-3 py-2" value={userId} onChange={e=>setUserId(e.target.value)} />
+    <Container>
+      <SectionHeading number="U2">账期汇总</SectionHeading>
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="flex items-center gap-3 text-sm text-slate-700">
+          <span>当前用户ID：<strong>{userId}</strong></span>
+          <Button variant="outline" color="blue" onClick={()=>setAdvanced(v=>!v)}>{advanced ? '隐藏高级' : '更改用户ID'}</Button>
+        </div>
+        {advanced && <input className="border rounded px-3 py-2" value={userId} onChange={e=>setUserId(e.target.value)} />}
         <input className="border rounded px-3 py-2" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} />
         <input className="border rounded px-3 py-2" value={dateTo} onChange={e=>setDateTo(e.target.value)} />
         <select className="border rounded px-3 py-2" value={groupBy} onChange={e=>setGroupBy(e.target.value)}>
@@ -73,6 +82,6 @@ export default function Period() {
           )}
         </div>
       )}
-    </div>
+    </Container>
   )
 }

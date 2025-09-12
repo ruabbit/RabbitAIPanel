@@ -30,3 +30,29 @@
 - /admin 与 /dashboard 路由下，隐藏全局 Navbar/Footer（由 AppFrame 负责顶栏与侧栏）
 - 页面内部继续使用 Primer 控件：Button/Container/SectionHeading
 
+## 页面迁移清单（用户侧）
+- 概览（/dashboard/overview）
+  - 默认使用当前用户（localStorage.dev_user_id），不再要求手动输入
+  - 提供“更改用户ID”高级开关（可选），避免主流程被打扰
+  - 使用 Button/Container/SectionHeading 布局
+
+- 账期汇总（/dashboard/period）
+  - 同上：默认绑定当前用户；保留日期与 group_by
+  - 导出 CSV 使用相同 userId 绑定
+
+- 每日汇总（/dashboard/daily）
+  - 同上：默认绑定当前用户；保留 date 输入
+
+- 近 N 日汇总（/dashboard/summary）
+  - 同上：默认绑定当前用户；保留 days 输入
+
+- 钱包（/dashboard/wallets）
+  - 同上：默认绑定当前用户；加载钱包列表
+
+- 流水（/dashboard/ledger）
+  - 同上：默认绑定当前用户；加载流水表格
+
+- 代理测试（/dashboard/proxy）
+  - 显示当前用户；x-litellm-api-key 仍可在页面输入
+
+备注：当前用户、API Key、Provider 通过 DevSettingsModal 维护（localStorage）。
