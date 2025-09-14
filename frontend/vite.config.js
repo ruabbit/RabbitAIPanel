@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import path from 'path'
@@ -33,9 +33,18 @@ export default defineConfig(({ command, mode }) => {
   // Write .env file on startup if explicitly enabled via env
   writeEnvFileIfEnabled()
 
+  // Ensure freshly written env is loaded and injected
+  const env = loadEnv(mode, process.cwd(), '')
+  const define = {}
+  for (const k of Object.keys(env)) {
+    if (k.startsWith('VITE_')) {
+      define[`import.meta.env.${k}`] = JSON.stringify(env[k])
+    }
+  }
+
   return {
     plugins: [react()],
-    define: {},
+    define,
     server: {
       port: 5173,
       strictPort: true,
