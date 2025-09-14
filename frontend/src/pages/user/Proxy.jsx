@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { chatCompletions } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import { currentUserId } from '../../utils/dev'
 
@@ -30,14 +29,21 @@ export default function Proxy() {
   }
   return (
     <Container>
-      <SectionHeading number="U8">代理测试</SectionHeading>
+      {/* 标题移除（开发工具页保留内容区） */}
       <div className="mt-2 text-sm text-slate-700">当前用户ID：<strong>{userId}</strong></div>
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input className="border rounded px-3 py-2" value={model} onChange={e=>setModel(e.target.value)} />
-        <input className="border rounded px-3 py-2" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="x-litellm-api-key" />
+        <div>
+          <label className="rr-label" htmlFor="proxy-model">模型</label>
+          <input id="proxy-model" className="rr-input" value={model} onChange={e=>setModel(e.target.value)} placeholder="gpt-4o-mini" />
+        </div>
+        <div>
+          <label className="rr-label" htmlFor="proxy-key">x-litellm-api-key</label>
+          <input id="proxy-key" className="rr-input" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="可选，代理直连时" />
+        </div>
       </div>
       <div className="mt-3">
-        <textarea className="w-full border rounded px-3 py-2" rows={4} value={prompt} onChange={e=>setPrompt(e.target.value)} />
+        <label className="rr-label" htmlFor="proxy-prompt">提示词</label>
+        <textarea id="proxy-prompt" className="rr-textarea" rows={4} value={prompt} onChange={e=>setPrompt(e.target.value)} />
       </div>
       <div className="mt-3 flex gap-2 items-center">
         <Button onClick={onSend} color="blue">发送</Button>

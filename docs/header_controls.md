@@ -17,7 +17,11 @@
   - 菜单键（移动端抽屉）
   - 左侧固定侧栏（桌面）：应用导航
 - 顶栏右侧：
-  - “配置”按钮（FiSettings）：打开 `DevSettingsModal`，内容与旧版一致，读写相同 localStorage 键
+  - “配置”按钮（FiSettings）：打开 `DevSettingsModal`
+    - API 基址：写入 localStorage.`api_base`，覆盖 .env 的 `VITE_API_BASE`
+    - DEV_API_KEY：localStorage.`dev_api_key`
+    - x-dev-user-id：localStorage.`dev_user_id`
+    - 社交提供方：localStorage.`social_provider`
   - “使用社交登录”（FiLogIn）：同旧版逻辑
   - 通知铃铛（FiBell）与用户菜单占位（可后续接入）
 

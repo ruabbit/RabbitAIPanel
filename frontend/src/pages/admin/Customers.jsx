@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { createCustomer } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -16,14 +15,25 @@ export default function Customers() {
   }
   return (
     <Container size="md">
-      <SectionHeading number="B1">客户</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select className="border rounded px-3 py-2" value={entityType} onChange={e=>setEntityType(e.target.value)}><option value="user">user</option><option value="team">team</option></select>
-          <input className="border rounded px-3 py-2" value={entityId} onChange={e=>setEntityId(e.target.value)} placeholder="entity_id" />
-          <input className="border rounded px-3 py-2" value={stripeId} onChange={e=>setStripeId(e.target.value)} placeholder="stripe_customer_id 可选" />
-          <Button onClick={onCreate} color="blue">创建 Customer</Button>
+          <div>
+            <label className="rr-label" htmlFor="cust-etype">entity_type</label>
+            <select id="cust-etype" className="rr-select" value={entityType} onChange={e=>setEntityType(e.target.value)}><option value="user">user</option><option value="team">team</option></select>
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="cust-eid">entity_id</label>
+            <input id="cust-eid" className="rr-input" value={entityId} onChange={e=>setEntityId(e.target.value)} placeholder="entity_id" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="cust-stripe">stripe_customer_id（可选）</label>
+            <input id="cust-stripe" className="rr-input" value={stripeId} onChange={e=>setStripeId(e.target.value)} placeholder="cus_xxx（可选）" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onCreate} color="blue" className="w-full">创建 Customer</Button>
+          </div>
         </div>
         {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
         </Card>

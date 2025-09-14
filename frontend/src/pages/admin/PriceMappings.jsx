@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { listPriceMappings, createPriceMapping, updatePriceMapping, deletePriceMapping } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -28,44 +27,82 @@ export default function PriceMappings() {
 
   return (
     <Container size="lg">
-      <SectionHeading number="A7">价格映射</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
-        <div className="flex gap-2">
-          <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id (用于列表)" />
-          <Button onClick={load} variant="outline" color="blue">加载映射</Button>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="rr-label" htmlFor="pm-list-plan">plan_id（列表）</label>
+            <input id="pm-list-plan" className="rr-input" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={load} variant="outline" color="blue" className="w-full">加载映射</Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={pmPlanId} onChange={e=>setPmPlanId(e.target.value)} placeholder="plan_id" />
-          <input className="border rounded px-3 py-2" value={pmCurrency} onChange={e=>setPmCurrency(e.target.value)} placeholder="currency" />
-          <input className="border rounded px-3 py-2" value={pmPriceId} onChange={e=>setPmPriceId(e.target.value)} placeholder="stripe_price_id" />
-          <select className="border rounded px-3 py-2" value={pmActive ? '1':'0'} onChange={e=>setPmActive(e.target.value==='1')}>
-            <option value="1">active</option>
-            <option value="0">inactive</option>
-          </select>
-          <Button onClick={create} color="blue">创建</Button>
+          <div>
+            <label className="rr-label" htmlFor="pm-create-plan">plan_id</label>
+            <input id="pm-create-plan" className="rr-input" value={pmPlanId} onChange={e=>setPmPlanId(e.target.value)} placeholder="plan_id" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="pm-create-currency">currency</label>
+            <input id="pm-create-currency" className="rr-input" value={pmCurrency} onChange={e=>setPmCurrency(e.target.value)} placeholder="USD" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="pm-create-price">stripe_price_id</label>
+            <input id="pm-create-price" className="rr-input" value={pmPriceId} onChange={e=>setPmPriceId(e.target.value)} placeholder="price_xxx" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="pm-create-active">active</label>
+            <select id="pm-create-active" className="rr-select" value={pmActive ? '1':'0'} onChange={e=>setPmActive(e.target.value==='1')}>
+              <option value="1">active</option>
+              <option value="0">inactive</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <Button onClick={create} color="blue" className="w-full">创建</Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={pmMappingId} onChange={e=>setPmMappingId(e.target.value)} placeholder="mapping_id" />
-          <Button onClick={update} variant="outline" color="blue">更新</Button>
-          <Button onClick={del} variant="outline" color="blue">删除</Button>
+          <div>
+            <label className="rr-label" htmlFor="pm-id">mapping_id</label>
+            <input id="pm-id" className="rr-input" value={pmMappingId} onChange={e=>setPmMappingId(e.target.value)} placeholder="mapping_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={update} variant="outline" color="blue" className="w-full">更新</Button>
+          </div>
+          <div className="flex items-end">
+            <Button onClick={del} variant="outline" color="blue" className="w-full">删除</Button>
+          </div>
         </div>
         {mappings && mappings.length > 0 && (
-          <div className="overflow-auto mt-4">
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100"><tr><th className="p-2 border">id</th><th className="p-2 border">plan_id</th><th className="p-2 border">currency</th><th className="p-2 border">stripe_price_id</th><th className="p-2 border">active</th></tr></thead>
-              <tbody>
-                {mappings.map(m => (
-                  <tr key={m.id} className="odd:bg-white even:bg-gray-50">
-                    <td className="p-2 border">{m.id}</td>
-                    <td className="p-2 border">{m.plan_id}</td>
-                    <td className="p-2 border">{m.currency}</td>
-                    <td className="p-2 border">{m.stripe_price_id}</td>
-                    <td className="p-2 border">{String(m.active)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rr-table-flow mt-4">
+            <div className="rr-table-scroll">
+              <div className="rr-table-inner">
+                <table className="rr-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">id</th>
+                      <th scope="col">plan_id</th>
+                      <th scope="col">currency</th>
+                      <th scope="col">stripe_price_id</th>
+                      <th scope="col">active</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mappings.map(m => (
+                      <tr key={m.id}>
+                        <td>{m.id}</td>
+                        <td>{m.plan_id}</td>
+                        <td>{m.currency}</td>
+                        <td>{m.stripe_price_id}</td>
+                        <td>{String(m.active)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
         {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}

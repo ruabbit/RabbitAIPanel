@@ -77,7 +77,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">user_id</label>
-            <input className="w-full border rounded px-3 py-2" value={userId} onChange={e => setUserId(e.target.value)} />
+            <input className="w-full rr-input" value={userId} onChange={e => setUserId(e.target.value)} />
           </div>
           <div className="flex items-end">
             <Button onClick={loadBudget} color="blue" className="w-full">加载预算总览</Button>
@@ -120,15 +120,15 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">date_from</label>
-            <input className="w-full border rounded px-3 py-2" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            <input className="w-full rr-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">date_to</label>
-            <input className="w-full border rounded px-3 py-2" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            <input className="w-full rr-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">group_by</label>
-            <select className="w-full border rounded px-3 py-2" value={groupBy} onChange={e => setGroupBy(e.target.value)}>
+            <select className="w-full rr-select" value={groupBy} onChange={e => setGroupBy(e.target.value)}>
               <option value="total">total</option>
               <option value="model">model</option>
               <option value="day">day</option>
@@ -149,20 +149,20 @@ export default function Dashboard() {
             <div>余额变动：{period.balance_delta_cents}¢</div>
             {period.groups && (
               <div className="overflow-auto">
-                <table className="min-w-full border mt-3">
-                  <thead className="bg-gray-100 text-gray-700">
+                <table className="rr-table mt-3">
+                  <thead>
                     <tr>
-                      {groupBy === 'model' && (<><th className="p-2 border">model</th><th className="p-2 border">usage_amount_cents</th><th className="p-2 border">usage_tokens</th></>)}
-                      {groupBy === 'day' && (<><th className="p-2 border">date</th><th className="p-2 border">usage_amount_cents</th><th className="p-2 border">usage_tokens</th></>)}
-                      {groupBy === 'model_day' && (<><th className="p-2 border">date</th><th className="p-2 border">model</th><th className="p-2 border">usage_amount_cents</th><th className="p-2 border">usage_tokens</th></>)}
+                      {groupBy === 'model' && (<><th scope="col">model</th><th scope="col">usage_amount_cents</th><th scope="col">usage_tokens</th></>)}
+                      {groupBy === 'day' && (<><th scope="col">date</th><th scope="col">usage_amount_cents</th><th scope="col">usage_tokens</th></>)}
+                      {groupBy === 'model_day' && (<><th scope="col">date</th><th scope="col">model</th><th scope="col">usage_amount_cents</th><th scope="col">usage_tokens</th></>)}
                     </tr>
                   </thead>
                   <tbody>
                     {period.groups.map((g, i) => (
-                      <tr key={i} className="odd:bg-white even:bg-gray-50">
-                        {groupBy === 'model' && (<><td className="p-2 border">{g.model}</td><td className="p-2 border">{g.usage_amount_cents}</td><td className="p-2 border">{g.usage_tokens}</td></>)}
-                        {groupBy === 'day' && (<><td className="p-2 border">{g.date}</td><td className="p-2 border">{g.usage_amount_cents}</td><td className="p-2 border">{g.usage_tokens}</td></>)}
-                        {groupBy === 'model_day' && (<><td className="p-2 border">{g.date}</td><td className="p-2 border">{g.model}</td><td className="p-2 border">{g.usage_amount_cents}</td><td className="p-2 border">{g.usage_tokens}</td></>)}
+                      <tr key={i}>
+                        {groupBy === 'model' && (<><td>{g.model}</td><td>{g.usage_amount_cents}</td><td>{g.usage_tokens}</td></>)}
+                        {groupBy === 'day' && (<><td>{g.date}</td><td>{g.usage_amount_cents}</td><td>{g.usage_tokens}</td></>)}
+                        {groupBy === 'model_day' && (<><td>{g.date}</td><td>{g.model}</td><td>{g.usage_amount_cents}</td><td>{g.usage_tokens}</td></>)}
                       </tr>
                     ))}
                   </tbody>
@@ -178,7 +178,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">date</label>
-            <input className="w-full border rounded px-3 py-2" value={dailyDate} onChange={e => setDailyDate(e.target.value)} />
+            <input className="w-full rr-input" value={dailyDate} onChange={e => setDailyDate(e.target.value)} />
           </div>
           <div className="flex items-end">
             <Button onClick={loadDaily} variant="outline" color="blue" className="w-full">加载 daily</Button>
@@ -194,7 +194,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">days</label>
-            <input className="w-full border rounded px-3 py-2" value={sumDays} onChange={e => setSumDays(e.target.value)} />
+            <input className="w-full rr-input" value={sumDays} onChange={e => setSumDays(e.target.value)} />
           </div>
           <div className="flex items-end">
             <Button onClick={loadSummary} variant="outline" color="blue" className="w-full">加载 summary</Button>
@@ -202,16 +202,16 @@ export default function Dashboard() {
         </div>
         {summary && (
           <div className="overflow-auto">
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100">
-                <tr><th className="p-2 border">date</th><th className="p-2 border">amount_cents</th><th className="p-2 border">total_tokens</th></tr>
+            <table className="rr-table">
+              <thead>
+                <tr><th scope="col">date</th><th scope="col">amount_cents</th><th scope="col">total_tokens</th></tr>
               </thead>
               <tbody>
                 {(summary.daily || []).map((d, i) => (
-                  <tr key={i} className="odd:bg-white even:bg-gray-50">
-                    <td className="p-2 border">{d.date}</td>
-                    <td className="p-2 border">{d.amount_cents}</td>
-                    <td className="p-2 border">{d.total_tokens}</td>
+                  <tr key={i}>
+                    <td>{d.date}</td>
+                    <td>{d.amount_cents}</td>
+                    <td>{d.total_tokens}</td>
                   </tr>
                 ))}
               </tbody>
@@ -225,7 +225,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">days</label>
-            <input className="w-full border rounded px-3 py-2" value={odDays} onChange={e => setOdDays(e.target.value)} />
+            <input className="w-full rr-input" value={odDays} onChange={e => setOdDays(e.target.value)} />
           </div>
           <div className="flex items-end">
             <Button onClick={loadOverdraft} variant="outline" color="blue" className="w-full">加载 overdraft</Button>
@@ -233,28 +233,28 @@ export default function Dashboard() {
         </div>
         {overdraft && (
           <div className="overflow-auto">
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100">
+            <table className="rr-table">
+              <thead>
                 <tr>
-                  <th className="p-2 border">created_at</th>
-                  <th className="p-2 border">model</th>
-                  <th className="p-2 border">request_id</th>
-                  <th className="p-2 border">overflow_policy</th>
-                  <th className="p-2 border">final_amount_cents</th>
-                  <th className="p-2 border">charged_amount_cents</th>
-                  <th className="p-2 border">remaining_before_cents</th>
+                  <th scope="col">created_at</th>
+                  <th scope="col">model</th>
+                  <th scope="col">request_id</th>
+                  <th scope="col">overflow_policy</th>
+                  <th scope="col">final_amount_cents</th>
+                  <th scope="col">charged_amount_cents</th>
+                  <th scope="col">remaining_before_cents</th>
                 </tr>
               </thead>
               <tbody>
                 {(overdraft.overdrafts || []).map((r, i) => (
-                  <tr key={i} className="odd:bg-white even:bg-gray-50">
-                    <td className="p-2 border">{r.created_at}</td>
-                    <td className="p-2 border">{r.model}</td>
-                    <td className="p-2 border">{r.request_id}</td>
-                    <td className="p-2 border">{r.overflow_policy}</td>
-                    <td className="p-2 border">{r.final_amount_cents}</td>
-                    <td className="p-2 border">{r.charged_amount_cents}</td>
-                    <td className="p-2 border">{r.remaining_before_cents}</td>
+                  <tr key={i}>
+                    <td>{r.created_at}</td>
+                    <td>{r.model}</td>
+                    <td>{r.request_id}</td>
+                    <td>{r.overflow_policy}</td>
+                    <td>{r.final_amount_cents}</td>
+                    <td>{r.charged_amount_cents}</td>
+                    <td>{r.remaining_before_cents}</td>
                   </tr>
                 ))}
               </tbody>

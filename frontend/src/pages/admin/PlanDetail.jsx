@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { getPlan } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -15,12 +14,17 @@ export default function PlanDetail() {
   }
   return (
     <Container size="md">
-      <SectionHeading number="A6">计划 - 详情</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
-          <div className="flex gap-2">
-            <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
-            <Button onClick={onQuery} color="blue">查询</Button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="rr-label" htmlFor="pd-detail-plan">plan_id</label>
+              <input id="pd-detail-plan" className="rr-input" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
+            </div>
+            <div className="flex items-end">
+              <Button onClick={onQuery} color="blue" className="w-full">查询</Button>
+            </div>
           </div>
           {msg && <div className="mt-3 text-sm text-red-600">{msg}</div>}
           {plan && (<pre className="mt-3 text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(plan, null, 2)}</pre>)}

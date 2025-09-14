@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { createSubscription, listSubscriptions, getSubscription, getSubscriptionByStripe } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -28,39 +27,74 @@ export default function Subscriptions() {
 
   return (
     <Container size="lg">
-      <SectionHeading number="B2">订阅</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
-          <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
-          <input className="border rounded px-3 py-2" value={stripeSubId} onChange={e=>setStripeSubId(e.target.value)} placeholder="stripe_subscription_id 可选" />
-          <Button onClick={onCreate} color="blue">创建订阅</Button>
-          <Button onClick={onList} variant="outline" color="blue">加载订阅</Button>
+          <div>
+            <label className="rr-label" htmlFor="sub-customer-id">customer_id</label>
+            <input id="sub-customer-id" className="rr-input" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="sub-plan-id">plan_id</label>
+            <input id="sub-plan-id" className="rr-input" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="sub-stripe-id">stripe_subscription_id（可选）</label>
+            <input id="sub-stripe-id" className="rr-input" value={stripeSubId} onChange={e=>setStripeSubId(e.target.value)} placeholder="price_xxx" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onCreate} color="blue" className="w-full">创建订阅</Button>
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onList} variant="outline" color="blue" className="w-full">加载订阅</Button>
+          </div>
         </div>
         {subs && subs.length > 0 && (
-          <div className="overflow-auto">
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100"><tr><th className="p-2 border">id</th><th className="p-2 border">customer_id</th><th className="p-2 border">plan_id</th><th className="p-2 border">status</th><th className="p-2 border">stripe_subscription_id</th></tr></thead>
-              <tbody>
-                {subs.map(s=> (
-                  <tr key={s.id} className="odd:bg-white even:bg-gray-50">
-                    <td className="p-2 border">{s.id}</td>
-                    <td className="p-2 border">{s.customer_id}</td>
-                    <td className="p-2 border">{s.plan_id}</td>
-                    <td className="p-2 border">{s.status}</td>
-                    <td className="p-2 border">{s.stripe_subscription_id || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rr-table-flow">
+            <div className="rr-table-scroll">
+              <div className="rr-table-inner">
+                <table className="rr-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">id</th>
+                      <th scope="col">customer_id</th>
+                      <th scope="col">plan_id</th>
+                      <th scope="col">status</th>
+                      <th scope="col">stripe_subscription_id</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subs.map(s=> (
+                      <tr key={s.id}>
+                        <td>{s.id}</td>
+                        <td>{s.customer_id}</td>
+                        <td>{s.plan_id}</td>
+                        <td>{s.status}</td>
+                        <td>{s.stripe_subscription_id || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={qId} onChange={e=>setQId(e.target.value)} placeholder="subscription_id" />
-          <Button onClick={onQuery} variant="outline" color="blue">查询</Button>
-          <input className="border rounded px-3 py-2" value={qStripe} onChange={e=>setQStripe(e.target.value)} placeholder="stripe_subscription_id" />
-          <Button onClick={onQueryStripe} variant="outline" color="blue">按 Stripe ID 查询</Button>
+          <div>
+            <label className="rr-label" htmlFor="sub-query-id">subscription_id</label>
+            <input id="sub-query-id" className="rr-input" value={qId} onChange={e=>setQId(e.target.value)} placeholder="subscription_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onQuery} variant="outline" color="blue" className="w-full">查询</Button>
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="sub-query-stripe">stripe_subscription_id</label>
+            <input id="sub-query-stripe" className="rr-input" value={qStripe} onChange={e=>setQStripe(e.target.value)} placeholder="stripe_subscription_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onQueryStripe} variant="outline" color="blue" className="w-full">按 Stripe ID 查询</Button>
+          </div>
         </div>
         {qRes && (<pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(qRes, null, 2)}</pre>)}
         {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}

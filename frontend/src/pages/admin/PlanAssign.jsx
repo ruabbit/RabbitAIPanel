@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { assignPlan } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -16,14 +15,25 @@ export default function PlanAssign() {
   }
   return (
     <Container size="md">
-      <SectionHeading number="A5">计划 - 分配</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <select className="border rounded px-3 py-2" value={entityType} onChange={e=>setEntityType(e.target.value)}><option value="user">user</option><option value="team">team</option></select>
-            <input className="border rounded px-3 py-2" value={entityId} onChange={e=>setEntityId(e.target.value)} placeholder="entity_id" />
-            <input className="border rounded px-3 py-2" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
-            <Button onClick={onAssign} color="blue">分配</Button>
+            <div>
+              <label className="rr-label" htmlFor="pa-etype">entity_type</label>
+              <select id="pa-etype" className="rr-select" value={entityType} onChange={e=>setEntityType(e.target.value)}><option value="user">user</option><option value="team">team</option></select>
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="pa-eid">entity_id</label>
+              <input id="pa-eid" className="rr-input" value={entityId} onChange={e=>setEntityId(e.target.value)} placeholder="entity_id" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="pa-plan">plan_id</label>
+              <input id="pa-plan" className="rr-input" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
+            </div>
+            <div className="flex items-end">
+              <Button onClick={onAssign} color="blue" className="w-full">分配</Button>
+            </div>
           </div>
           {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
         </Card>

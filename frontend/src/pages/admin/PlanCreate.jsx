@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { createPlan, updatePlanMeta } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -32,17 +31,29 @@ export default function PlanCreate() {
   }
   return (
     <Container size="md">
-      <SectionHeading number="A1">计划 - 创建</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <input className="border rounded px-3 py-2" value={name} onChange={e=>setName(e.target.value)} placeholder="name" />
-            <select className="border rounded px-3 py-2" value={type} onChange={e=>setType(e.target.value)}>
-              <option value="daily_limit">daily_limit</option>
-              <option value="usage">usage</option>
-            </select>
-            <input className="border rounded px-3 py-2" value={currency} onChange={e=>setCurrency(e.target.value)} placeholder="currency" />
-            <input className="border rounded px-3 py-2 md:col-span-2" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='meta JSON' />
+            <div>
+              <label className="rr-label" htmlFor="pl-name">name</label>
+              <input id="pl-name" className="rr-input" value={name} onChange={e=>setName(e.target.value)} placeholder="name" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="pl-type">type</label>
+              <select id="pl-type" className="rr-select" value={type} onChange={e=>setType(e.target.value)}>
+                <option value="daily_limit">daily_limit</option>
+                <option value="usage">usage</option>
+              </select>
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="pl-currency">currency</label>
+              <input id="pl-currency" className="rr-input" value={currency} onChange={e=>setCurrency(e.target.value)} placeholder="USD" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="rr-label" htmlFor="pl-meta">meta JSON</label>
+              <input id="pl-meta" className="rr-input" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='{"stripe_price_id":"price_xxx_optional"}' />
+            </div>
           </div>
           <div className="mt-4 flex gap-2 items-center">
             <Button onClick={onCreate} color="blue">创建 Plan</Button>

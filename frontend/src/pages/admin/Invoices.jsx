@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { listInvoices, generateInvoice, pushInvoiceToStripe, getInvoice } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -22,41 +21,76 @@ export default function Invoices() {
 
   return (
     <Container size="lg">
-      <SectionHeading number="B3">发票</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
-          <Button onClick={onList} variant="outline" color="blue">加载发票</Button>
+          <div>
+            <label className="rr-label" htmlFor="inv-customer-id">customer_id</label>
+            <input id="inv-customer-id" className="rr-input" value={customerId} onChange={e=>setCustomerId(e.target.value)} placeholder="customer_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onList} variant="outline" color="blue" className="w-full">加载发票</Button>
+          </div>
         </div>
         {invoices && invoices.length > 0 && (
-          <div className="overflow-auto">
-            <table className="min-w-full border text-sm">
-              <thead className="bg-gray-100"><tr><th className="p-2 border">id</th><th className="p-2 border">total_amount_cents</th><th className="p-2 border">currency</th><th className="p-2 border">status</th><th className="p-2 border">stripe_invoice_id</th></tr></thead>
-              <tbody>
-                {invoices.map(inv => (
-                  <tr key={inv.id} className="odd:bg-white even:bg-gray-50">
-                    <td className="p-2 border">{inv.id}</td>
-                    <td className="p-2 border">{inv.total_amount_cents}</td>
-                    <td className="p-2 border">{inv.currency}</td>
-                    <td className="p-2 border">{inv.status}</td>
-                    <td className="p-2 border">{inv.stripe_invoice_id || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rr-table-flow">
+            <div className="rr-table-scroll">
+              <div className="rr-table-inner">
+                <table className="rr-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">id</th>
+                      <th scope="col">total_amount_cents</th>
+                      <th scope="col">currency</th>
+                      <th scope="col">status</th>
+                      <th scope="col">stripe_invoice_id</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map(inv => (
+                      <tr key={inv.id}>
+                        <td>{inv.id}</td>
+                        <td>{inv.total_amount_cents}</td>
+                        <td>{inv.currency}</td>
+                        <td>{inv.status}</td>
+                        <td>{inv.stripe_invoice_id || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-6 gap-3">
-          <input className="border rounded px-3 py-2" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} placeholder="date_from" />
-          <input className="border rounded px-3 py-2" value={dateTo} onChange={e=>setDateTo(e.target.value)} placeholder="date_to" />
-          <Button onClick={onGenerate} color="blue">生成发票</Button>
-          <input className="border rounded px-3 py-2" value={invoiceId} onChange={e=>setInvoiceId(e.target.value)} placeholder="invoice_id（用于推送）" />
-          <Button onClick={onPush} variant="outline" color="blue">推送 Stripe</Button>
+          <div>
+            <label className="rr-label" htmlFor="inv-date-from">date_from</label>
+            <input id="inv-date-from" className="rr-input" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} placeholder="YYYY-MM-DD" />
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="inv-date-to">date_to</label>
+            <input id="inv-date-to" className="rr-input" value={dateTo} onChange={e=>setDateTo(e.target.value)} placeholder="YYYY-MM-DD" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onGenerate} color="blue" className="w-full">生成发票</Button>
+          </div>
+          <div>
+            <label className="rr-label" htmlFor="inv-push-id">invoice_id（用于推送）</label>
+            <input id="inv-push-id" className="rr-input" value={invoiceId} onChange={e=>setInvoiceId(e.target.value)} placeholder="invoice_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onPush} variant="outline" color="blue" className="w-full">推送 Stripe</Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input className="border rounded px-3 py-2" value={qInvoiceId} onChange={e=>setQInvoiceId(e.target.value)} placeholder="查询 invoice_id" />
-          <Button onClick={onQuery} variant="outline" color="blue">查询发票详情</Button>
+          <div>
+            <label className="rr-label" htmlFor="inv-query-id">查询 invoice_id</label>
+            <input id="inv-query-id" className="rr-input" value={qInvoiceId} onChange={e=>setQInvoiceId(e.target.value)} placeholder="invoice_id" />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={onQuery} variant="outline" color="blue" className="w-full">查询发票详情</Button>
+          </div>
         </div>
         {detail && (<pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto">{JSON.stringify(detail, null, 2)}</pre>)}
         {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}

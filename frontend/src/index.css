@@ -53,3 +53,20 @@
 html, body, #root {
   height: 100%;
 }
+
+/* Reusable table styling migrated from example/table */
+.rr-table { @apply relative min-w-full divide-y divide-gray-300; }
+.rr-table thead th { @apply px-3 py-3.5 text-left text-sm font-semibold text-gray-900; }
+.rr-table tbody { @apply divide-y divide-gray-200; }
+.rr-table tbody td { @apply px-3 py-4 text-sm whitespace-nowrap text-gray-500; }
+
+/* Optional helpers for consistent table containers */
+.rr-table-flow { @apply flow-root; }
+.rr-table-scroll { @apply -mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8; }
+.rr-table-inner { @apply inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8; }
+
+/* Reusable input and select styles from example/input */
+.rr-label { @apply block text-sm/6 font-medium text-gray-900; }
+.rr-input { @apply block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-sky-600 sm:text-sm/6; }
+.rr-select { @apply block w-full appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-sky-600 sm:text-sm/6; }
+.rr-textarea { @apply block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-sky-600 sm:text-sm/6; }

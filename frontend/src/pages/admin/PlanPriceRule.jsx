@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { addPriceRuleToPlan } from '../../utils/api'
 import Container from '../../primer/Container'
-import SectionHeading from '../../primer/SectionHeading'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
 
@@ -28,7 +27,7 @@ export default function PlanPriceRule() {
   }
   return (
     <Container size="lg">
-      <SectionHeading number="A4">计划 - 计价规则</SectionHeading>
+      {/* 标题移除 */}
       <div className="mt-6 space-y-4">
         <Card>
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3">

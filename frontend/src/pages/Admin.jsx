@@ -265,11 +265,11 @@ export default function Admin() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">customer_id</label>
-            <input className="w-full border rounded px-3 py-2" value={customerId} onChange={e => setCustomerId(e.target.value)} />
+            <input className="w-full rr-input" value={customerId} onChange={e => setCustomerId(e.target.value)} />
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">plan_id</label>
-            <input className="w-full border rounded px-3 py-2" value={planId} onChange={e => setPlanId(e.target.value)} placeholder="可空" />
+            <input className="w-full rr-input" value={planId} onChange={e => setPlanId(e.target.value)} placeholder="可空" />
           </div>
           <div className="flex items-end">
             <button onClick={loadSubs} className="bg-primary text-white px-4 py-2 rounded w-full">加载订阅</button>
@@ -284,31 +284,35 @@ export default function Admin() {
         {!!subs.length && (
           <div>
             <div className="font-semibold mb-2">订阅</div>
-            <div className="overflow-auto">
-              <table className="min-w-full border text-sm">
-                <thead className="bg-gray-100">
+            <div className="rr-table-flow">
+              <div className="rr-table-scroll">
+                <div className="rr-table-inner">
+                  <table className="rr-table">
+                    <thead>
                   <tr>
-                    <th className="p-2 border">id</th>
-                    <th className="p-2 border">customer_id</th>
-                    <th className="p-2 border">plan_id</th>
-                    <th className="p-2 border">status</th>
-                    <th className="p-2 border">stripe_subscription_id</th>
-                    <th className="p-2 border">created_at</th>
+                    <th scope="col">id</th>
+                    <th scope="col">customer_id</th>
+                    <th scope="col">plan_id</th>
+                    <th scope="col">status</th>
+                    <th scope="col">stripe_subscription_id</th>
+                    <th scope="col">created_at</th>
                   </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                   {subs.map(s => (
-                    <tr key={s.id} className="odd:bg-white even:bg-gray-50">
-                      <td className="p-2 border">{s.id}</td>
-                      <td className="p-2 border">{s.customer_id}</td>
-                      <td className="p-2 border">{s.plan_id}</td>
-                      <td className="p-2 border">{s.status}</td>
-                      <td className="p-2 border">{s.stripe_subscription_id}</td>
-                      <td className="p-2 border">{s.created_at}</td>
+                    <tr key={s.id}>
+                      <td>{s.id}</td>
+                      <td>{s.customer_id}</td>
+                      <td>{s.plan_id}</td>
+                      <td>{s.status}</td>
+                      <td>{s.stripe_subscription_id}</td>
+                      <td>{s.created_at}</td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -316,31 +320,35 @@ export default function Admin() {
         {!!invoices.length && (
           <div>
             <div className="font-semibold mb-2">发票</div>
-            <div className="overflow-auto">
-              <table className="min-w-full border text-sm">
-                <thead className="bg-gray-100">
+            <div className="rr-table-flow">
+              <div className="rr-table-scroll">
+                <div className="rr-table-inner">
+                  <table className="rr-table">
+                    <thead>
                   <tr>
-                    <th className="p-2 border">id</th>
-                    <th className="p-2 border">customer_id</th>
-                    <th className="p-2 border">total_amount_cents</th>
-                    <th className="p-2 border">currency</th>
-                    <th className="p-2 border">status</th>
-                    <th className="p-2 border">stripe_invoice_id</th>
+                    <th scope="col">id</th>
+                    <th scope="col">customer_id</th>
+                    <th scope="col">total_amount_cents</th>
+                    <th scope="col">currency</th>
+                    <th scope="col">status</th>
+                    <th scope="col">stripe_invoice_id</th>
                   </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                   {invoices.map(inv => (
-                    <tr key={inv.id} className="odd:bg-white even:bg-gray-50">
-                      <td className="p-2 border">{inv.id}</td>
-                      <td className="p-2 border">{inv.customer_id}</td>
-                      <td className="p-2 border">{inv.total_amount_cents}</td>
-                      <td className="p-2 border">{inv.currency}</td>
-                      <td className="p-2 border">{inv.status}</td>
-                      <td className="p-2 border">{inv.stripe_invoice_id || '-'}</td>
+                    <tr key={inv.id}>
+                      <td>{inv.id}</td>
+                      <td>{inv.customer_id}</td>
+                      <td>{inv.total_amount_cents}</td>
+                      <td>{inv.currency}</td>
+                      <td>{inv.status}</td>
+                      <td>{inv.stripe_invoice_id || '-'}</td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -350,7 +358,7 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">plan_id</label>
-              <input className="w-full border rounded px-3 py-2" value={planId} onChange={e => setPlanId(e.target.value)} />
+              <input className="w-full rr-input" value={planId} onChange={e => setPlanId(e.target.value)} />
             </div>
             <div className="flex items-end">
               <button onClick={loadMappings} className="border px-4 py-2 rounded w-full">加载映射</button>
@@ -363,15 +371,15 @@ export default function Admin() {
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">currency</label>
-              <input className="w-full border rounded px-3 py-2" value={pmCurrency} onChange={e => setPmCurrency(e.target.value)} />
+              <input className="w-full rr-input" value={pmCurrency} onChange={e => setPmCurrency(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">stripe_price_id</label>
-              <input className="w-full border rounded px-3 py-2" value={pmPriceId} onChange={e => setPmPriceId(e.target.value)} />
+              <input className="w-full rr-input" value={pmPriceId} onChange={e => setPmPriceId(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">active</label>
-              <select className="w-full border rounded px-3 py-2" value={pmActive ? '1':'0'} onChange={e => setPmActive(e.target.value === '1')}>
+              <select className="w-full rr-select" value={pmActive ? '1':'0'} onChange={e => setPmActive(e.target.value === '1')}>
                 <option value="1">true</option>
                 <option value="0">false</option>
               </select>
@@ -383,7 +391,7 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">mapping_id</label>
-              <input className="w-full border rounded px-3 py-2" value={pmMappingId} onChange={e => setPmMappingId(e.target.value)} />
+              <input className="w-full rr-input" value={pmMappingId} onChange={e => setPmMappingId(e.target.value)} />
             </div>
             <div className="flex items-end">
               <button onClick={updatePm} className="border px-4 py-2 rounded w-full">更新映射</button>
@@ -393,29 +401,33 @@ export default function Admin() {
             </div>
           </div>
           {!!mappings.length && (
-            <div className="overflow-auto">
-              <table className="min-w-full border text-sm">
-                <thead className="bg-gray-100">
+            <div className="rr-table-flow">
+              <div className="rr-table-scroll">
+                <div className="rr-table-inner">
+                  <table className="rr-table">
+                    <thead>
                   <tr>
-                    <th className="p-2 border">id</th>
-                    <th className="p-2 border">plan_id</th>
-                    <th className="p-2 border">currency</th>
-                    <th className="p-2 border">stripe_price_id</th>
-                    <th className="p-2 border">active</th>
+                    <th scope="col">id</th>
+                    <th scope="col">plan_id</th>
+                    <th scope="col">currency</th>
+                    <th scope="col">stripe_price_id</th>
+                    <th scope="col">active</th>
                   </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                   {mappings.map(m => (
-                    <tr key={m.id} className="odd:bg-white even:bg-gray-50">
-                      <td className="p-2 border">{m.id}</td>
-                      <td className="p-2 border">{m.plan_id}</td>
-                      <td className="p-2 border">{m.currency}</td>
-                      <td className="p-2 border">{m.stripe_price_id}</td>
-                      <td className="p-2 border">{String(m.active)}</td>
+                    <tr key={m.id}>
+                      <td>{m.id}</td>
+                      <td>{m.plan_id}</td>
+                      <td>{m.currency}</td>
+                      <td>{m.stripe_price_id}</td>
+                      <td>{String(m.active)}</td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -425,15 +437,15 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">customer_id</label>
-              <input className="w-full border rounded px-3 py-2" value={customerId} onChange={e => setCustomerId(e.target.value)} />
+              <input className="w-full rr-input" value={customerId} onChange={e => setCustomerId(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">date_from</label>
-              <input className="w-full border rounded px-3 py-2" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+              <input className="w-full rr-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">date_to</label>
-              <input className="w-full border rounded px-3 py-2" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+              <input className="w-full rr-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
             </div>
             <div className="flex items-end">
               <button onClick={onGenerateInvoice} className="bg-primary text-white px-4 py-2 rounded w-full">生成发票</button>
@@ -442,7 +454,7 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">invoice_id</label>
-              <input className="w-full border rounded px-3 py-2" value={invoiceId} onChange={e => setInvoiceId(e.target.value)} />
+              <input className="w-full rr-input" value={invoiceId} onChange={e => setInvoiceId(e.target.value)} />
             </div>
             <div className="flex items-end">
               <button onClick={onPushInvoice} className="border px-4 py-2 rounded w-full">推送至 Stripe</button>
@@ -560,14 +572,14 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">assignment entity_type</label>
-              <select className="w-full border rounded px-3 py-2" value={assEntityType} onChange={e => setAssEntityType(e.target.value)}>
+              <select className="w-full rr-select" value={assEntityType} onChange={e => setAssEntityType(e.target.value)}>
                 <option value="user">user</option>
                 <option value="team">team</option>
               </select>
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">assignment entity_id</label>
-              <input className="w-full border rounded px-3 py-2" value={assEntityId} onChange={e => setAssEntityId(e.target.value)} />
+              <input className="w-full rr-input" value={assEntityId} onChange={e => setAssEntityId(e.target.value)} />
             </div>
             <div className="flex items-end">
               <button onClick={onGetAssignment} className="border px-4 py-2 rounded w-full">查询分配</button>
@@ -579,7 +591,7 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">wallet user_id</label>
-              <input className="w-full border rounded px-3 py-2" value={wlUserId} onChange={e => setWlUserId(e.target.value)} />
+              <input className="w-full rr-input" value={wlUserId} onChange={e => setWlUserId(e.target.value)} />
             </div>
             <div className="flex items-end">
               <button onClick={loadWallets} className="border px-4 py-2 rounded w-full">加载钱包</button>
@@ -599,22 +611,26 @@ export default function Admin() {
             </div>
           )}
           {(ledger && ledger.length > 0) && (
-            <div className="overflow-auto">
-              <table className="min-w-full border text-sm">
-                <thead className="bg-gray-100">
-                  <tr><th className="p-2 border">created_at</th><th className="p-2 border">currency</th><th className="p-2 border">amount_cents</th><th className="p-2 border">reason</th></tr>
-                </thead>
-                <tbody>
-                  {ledger.map((l, i) => (
-                    <tr key={i} className="odd:bg-white even:bg-gray-50">
-                      <td className="p-2 border">{l.created_at}</td>
-                      <td className="p-2 border">{l.currency}</td>
-                      <td className="p-2 border">{l.amount_cents}</td>
-                      <td className="p-2 border">{l.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="rr-table-flow">
+              <div className="rr-table-scroll">
+                <div className="rr-table-inner">
+                  <table className="rr-table">
+                    <thead>
+                      <tr><th scope="col">created_at</th><th scope="col">currency</th><th scope="col">amount_cents</th><th scope="col">reason</th></tr>
+                    </thead>
+                    <tbody>
+                      {ledger.map((l, i) => (
+                        <tr key={i}>
+                          <td>{l.created_at}</td>
+                          <td>{l.currency}</td>
+                          <td>{l.amount_cents}</td>
+                          <td>{l.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -624,19 +640,19 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">team_id</label>
-              <input className="w-full border rounded px-3 py-2" value={teamId} onChange={e => setTeamId(e.target.value)} />
+              <input className="w-full rr-input" value={teamId} onChange={e => setTeamId(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">date_from</label>
-              <input className="w-full border rounded px-3 py-2" value={tpFrom} onChange={e => setTpFrom(e.target.value)} />
+              <input className="w-full rr-input" value={tpFrom} onChange={e => setTpFrom(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">date_to</label>
-              <input className="w-full border rounded px-3 py-2" value={tpTo} onChange={e => setTpTo(e.target.value)} />
+              <input className="w-full rr-input" value={tpTo} onChange={e => setTpTo(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">group_by</label>
-              <select className="w-full border rounded px-3 py-2" value={tpGroup} onChange={e => setTpGroup(e.target.value)}>
+              <select className="w-full rr-select" value={tpGroup} onChange={e => setTpGroup(e.target.value)}>
                 <option value="total">total</option>
                 <option value="model">model</option>
                 <option value="day">day</option>
