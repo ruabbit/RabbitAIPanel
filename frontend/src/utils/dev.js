@@ -1,13 +1,7 @@
 export function isDebug() {
   try {
     const v = import.meta?.env?.VITE_DEBUG
-    const envDebug = v === true || v === 'true' || v === '1'
-    const url = new URL(window.location.href)
-    const q = url.searchParams.get('debug')
-    const qsDebug = q === '1' || q === 'true'
-    const ls = localStorage.getItem('debug')
-    const lsDebug = ls === '1' || ls === 'true'
-    return envDebug || qsDebug || lsDebug
+    return v === true || v === 'true' || v === '1'
   } catch {
     return false
   }
