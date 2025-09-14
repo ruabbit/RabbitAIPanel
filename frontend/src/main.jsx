@@ -2,7 +2,6 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
-import { writeEnvOnStart } from './utils/startup'
 import App from './App'
 import Home from './pages/Home'
 import PrimerHome from './pages/PrimerHome'
@@ -34,9 +33,6 @@ import Subscriptions from './pages/admin/Subscriptions'
 import Invoices from './pages/admin/Invoices'
 import StripeEnsure from './pages/admin/StripeEnsure'
 import TeamPeriod from './pages/admin/TeamPeriod'
-
-// Optional: write env to localStorage on startup (controlled by VITE_WRITE_ENV_ON_START or ?write_env=1)
-writeEnvOnStart()
 
 const router = createBrowserRouter([
   {

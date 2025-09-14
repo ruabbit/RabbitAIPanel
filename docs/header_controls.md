@@ -45,9 +45,6 @@
 启用方式：推荐使用 npm script（无需手改 `.env`）
 - `npm run dev:debug` 或 `npm run dev:debug:host`
 
-（可选）启动时将 `.env` 中的 `VITE_API_BASE` 写回到 localStorage（排查注入问题）：
-- `npm run dev:debug:writeenv`
-
 ## 页面迁移清单（用户侧）
 - 概览（/dashboard/overview）
   - 默认使用当前用户（来自“开发配置”的 `x-dev-user-id`，仅 Debug=ON 有效），不再要求手动输入

@@ -171,22 +171,16 @@ npm run dev
 
 （可选）生产可用 Nginx/ Caddy 提供静态站点，以及反向代理到后端 8000 端口。
 
-### 5.3 Debug 与自动创建 .env（可选）
+### 5.3 Debug（可选）
 
-无需修改 `frontend/.env` 也可通过 npm scripts 开启调试与写回：
+无需修改 `frontend/.env` 也可通过 npm scripts 开启调试：
 
 ```bash
-# 仅开启 Debug（显示“配置”与 API 指示，Dev 覆盖生效）
+# 开启 Debug（显示“配置”与 API 指示，Dev 覆盖生效）
 npm run dev:debug:host
-
-# 同时开启 Debug + 自动创建 .env 文件（若 .env 不存在则根据当前进程环境变量生成）
-npm run dev:debug:writeenv -- --host 0.0.0.0 --port 5173
 ```
 
-说明：
-- Debug=ON 时才会读取 “开发配置” 中的覆盖（api_base、dev_api_key、x-dev-user-id 等）。
-- 写入 .env 的行为默认关闭；只有使用 `dev:writeenv` 或 `dev:debug:writeenv` 时触发。
-- 自动创建 `.env` 的逻辑（仅当 `.env` 不存在时）：严格根据“当前进程环境变量”生成（如 `VITE_API_BASE`、`VITE_DEBUG`），不会复制任何备份文件。
+说明：Debug=ON 时才会读取“开发配置”中的覆盖（api_base、dev_api_key、x-dev-user-id 等）。
 
 ## 6. 本地 Demo 验证
 

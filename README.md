@@ -88,7 +88,6 @@ This milestone (M1) delivers the plugin framework and data layer.
 - Dev-only overrides (API base, dev headers) are gated by `VITE_DEBUG` and are ignored in production.
 - Use npm scripts to enable debug without editing `.env`:
   - `npm run dev:debug:host` — enable debug with host bind
-  - `npm run dev:debug:writeenv -- --host 0.0.0.0 --port 5173` — debug + write `.env` `VITE_API_BASE` into `localStorage.api_base` on startup (diagnostics)
 
 ## Roadmap
 - M1: Plugin framework + models + provider skeletons
