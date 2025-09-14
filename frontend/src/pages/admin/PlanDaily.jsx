@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { upsertDailyLimit } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
+import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function PlanDaily() {
@@ -30,11 +31,7 @@ export default function PlanDaily() {
             </div>
             <div>
               <label className="rr-label" htmlFor="pd-policy">overflow_policy</label>
-              <select id="pd-policy" className="rr-select" value={policy} onChange={e=>setPolicy(e.target.value)}>
-                <option value="block">block</option>
-                <option value="grace">grace</option>
-                <option value="degrade">degrade</option>
-              </select>
+              <Select id="pd-policy" value={policy} onChange={v=>setPolicy(String(v))} options={[{value:'block',label:'block'},{value:'grace',label:'grace'},{value:'degrade',label:'degrade'}]} placeholder="选择策略" />
             </div>
             <div>
               <label className="rr-label" htmlFor="pd-reset">reset_time</label>

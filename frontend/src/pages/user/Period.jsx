@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getPeriod } from '../../utils/api'
+import Select from '../../components/Select'
 import Button from '../../primer/Button'
 import Container from '../../primer/Container'
 import { currentUserId } from '../../utils/dev'
@@ -60,12 +61,18 @@ export default function Period() {
         </div>
         <div>
           <label className="rr-label" htmlFor="period-group-by">分组</label>
-          <select id="period-group-by" className="rr-select" value={groupBy} onChange={e=>setGroupBy(e.target.value)}>
-            <option value="total">total</option>
-            <option value="model">model</option>
-            <option value="day">day</option>
-            <option value="model_day">model_day</option>
-          </select>
+          <Select
+            id="period-group-by"
+            value={groupBy}
+            onChange={(v) => setGroupBy(String(v))}
+            options={[
+              { value: 'total', label: 'total' },
+              { value: 'model', label: 'model' },
+              { value: 'day', label: 'day' },
+              { value: 'model_day', label: 'model_day' },
+            ]}
+            placeholder="选择分组"
+          />
         </div>
         <div className="flex gap-2 items-end">
           <Button onClick={load} color="blue">刷新</Button>

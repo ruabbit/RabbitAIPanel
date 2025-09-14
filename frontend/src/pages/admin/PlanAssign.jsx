@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { assignPlan } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
+import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function PlanAssign() {
@@ -21,7 +22,7 @@ export default function PlanAssign() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
               <label className="rr-label" htmlFor="pa-etype">entity_type</label>
-              <select id="pa-etype" className="rr-select" value={entityType} onChange={e=>setEntityType(e.target.value)}><option value="user">user</option><option value="team">team</option></select>
+              <Select id="pa-etype" value={entityType} onChange={v=>setEntityType(String(v))} options={[{value:'user',label:'user'},{value:'team',label:'team'}]} placeholder="选择类型" />
             </div>
             <div>
               <label className="rr-label" htmlFor="pa-eid">entity_id</label>

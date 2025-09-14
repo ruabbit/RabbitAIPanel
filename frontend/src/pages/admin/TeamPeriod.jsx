@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { getTeamPeriod } from '../../utils/api'
+import Select from '../../components/Select'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
 import Card from '../../primer/Card'
@@ -32,12 +33,18 @@ export default function TeamPeriod() {
           </div>
           <div>
             <label className="rr-label" htmlFor="tp-group-by">group_by</label>
-            <select id="tp-group-by" className="rr-select" value={groupBy} onChange={e=>setGroupBy(e.target.value)}>
-              <option value="total">total</option>
-              <option value="model">model</option>
-              <option value="day">day</option>
-              <option value="model_day">model_day</option>
-            </select>
+            <Select
+              id="tp-group-by"
+              value={groupBy}
+              onChange={(v)=>setGroupBy(String(v))}
+              options={[
+                { value: 'total', label: 'total' },
+                { value: 'model', label: 'model' },
+                { value: 'day', label: 'day' },
+                { value: 'model_day', label: 'model_day' },
+              ]}
+              placeholder="选择分组"
+            />
           </div>
           <div className="flex items-end">
             <Button onClick={load} variant="outline" color="blue" className="w-full">加载</Button>

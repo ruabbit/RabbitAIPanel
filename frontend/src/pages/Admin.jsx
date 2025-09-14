@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import Select from '../components/Select'
 import {
   listSubscriptions,
   listInvoices,
@@ -379,10 +380,9 @@ export default function Admin() {
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">active</label>
-              <select className="w-full rr-select" value={pmActive ? '1':'0'} onChange={e => setPmActive(e.target.value === '1')}>
-                <option value="1">true</option>
-                <option value="0">false</option>
-              </select>
+              <div className="w-full">
+                <Select value={pmActive ? '1':'0'} onChange={v => setPmActive(String(v) === '1')} options={[{value:'1',label:'true'},{value:'0',label:'false'}]} placeholder="active" />
+              </div>
             </div>
             <div className="flex items-end">
               <button onClick={createPm} className="bg-primary text-white px-4 py-2 rounded w-full">创建映射</button>
@@ -572,10 +572,9 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div>
               <label className="block text-sm text-gray-600 mb-1">assignment entity_type</label>
-              <select className="w-full rr-select" value={assEntityType} onChange={e => setAssEntityType(e.target.value)}>
-                <option value="user">user</option>
-                <option value="team">team</option>
-              </select>
+              <div className="w-full">
+                <Select value={assEntityType} onChange={v => setAssEntityType(String(v))} options={[{value:'user',label:'user'},{value:'team',label:'team'}]} placeholder="entity_type" />
+              </div>
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">assignment entity_id</label>
@@ -652,12 +651,9 @@ export default function Admin() {
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">group_by</label>
-              <select className="w-full rr-select" value={tpGroup} onChange={e => setTpGroup(e.target.value)}>
-                <option value="total">total</option>
-                <option value="model">model</option>
-                <option value="day">day</option>
-                <option value="model_day">model_day</option>
-              </select>
+              <div className="w-full">
+                <Select value={tpGroup} onChange={v => setTpGroup(String(v))} options={[{value:'total',label:'total'},{value:'model',label:'model'},{value:'day',label:'day'},{value:'model_day',label:'model_day'}]} placeholder="group_by" />
+              </div>
             </div>
             <div className="flex items-end">
               <button onClick={loadTeamPeriod} className="border px-4 py-2 rounded w-full">加载团队账期</button>

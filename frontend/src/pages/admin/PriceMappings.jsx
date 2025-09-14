@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { listPriceMappings, createPriceMapping, updatePriceMapping, deletePriceMapping } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
+import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function PriceMappings() {
@@ -54,10 +55,7 @@ export default function PriceMappings() {
           </div>
           <div>
             <label className="rr-label" htmlFor="pm-create-active">active</label>
-            <select id="pm-create-active" className="rr-select" value={pmActive ? '1':'0'} onChange={e=>setPmActive(e.target.value==='1')}>
-              <option value="1">active</option>
-              <option value="0">inactive</option>
-            </select>
+            <Select id="pm-create-active" value={pmActive ? '1':'0'} onChange={v=>setPmActive(String(v)==='1')} options={[{value:'1',label:'active'},{value:'0',label:'inactive'}]} placeholder="选择状态" />
           </div>
           <div className="flex items-end">
             <Button onClick={create} color="blue" className="w-full">创建</Button>

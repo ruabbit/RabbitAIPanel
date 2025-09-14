@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { createCustomer } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
+import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function Customers() {
@@ -21,7 +22,7 @@ export default function Customers() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="rr-label" htmlFor="cust-etype">entity_type</label>
-            <select id="cust-etype" className="rr-select" value={entityType} onChange={e=>setEntityType(e.target.value)}><option value="user">user</option><option value="team">team</option></select>
+            <Select id="cust-etype" value={entityType} onChange={v=>setEntityType(String(v))} options={[{value:'user',label:'user'},{value:'team',label:'team'}]} placeholder="选择类型" />
           </div>
           <div>
             <label className="rr-label" htmlFor="cust-eid">entity_id</label>

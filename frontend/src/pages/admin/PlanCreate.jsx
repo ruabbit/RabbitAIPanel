@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { createPlan, updatePlanMeta } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
+import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function PlanCreate() {
@@ -41,10 +42,7 @@ export default function PlanCreate() {
             </div>
             <div>
               <label className="rr-label" htmlFor="pl-type">type</label>
-              <select id="pl-type" className="rr-select" value={type} onChange={e=>setType(e.target.value)}>
-                <option value="daily_limit">daily_limit</option>
-                <option value="usage">usage</option>
-              </select>
+              <Select id="pl-type" value={type} onChange={v=>setType(String(v))} options={[{value:'daily_limit',label:'daily_limit'},{value:'usage',label:'usage'}]} placeholder="选择类型" />
             </div>
             <div>
               <label className="rr-label" htmlFor="pl-currency">currency</label>

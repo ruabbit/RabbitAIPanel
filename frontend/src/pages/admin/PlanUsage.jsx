@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { upsertUsagePlan } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
+import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function PlanUsage() {
@@ -24,10 +25,7 @@ export default function PlanUsage() {
             </div>
             <div>
               <label className="rr-label" htmlFor="pu-billing">billing_cycle</label>
-              <select id="pu-billing" className="rr-select" value={billing} onChange={e=>setBilling(e.target.value)}>
-                <option value="monthly">monthly</option>
-                <option value="weekly">weekly</option>
-              </select>
+              <Select id="pu-billing" value={billing} onChange={v=>setBilling(String(v))} options={[{value:'monthly',label:'monthly'},{value:'weekly',label:'weekly'}]} placeholder="选择周期" />
             </div>
           </div>
           <div className="mt-4">
