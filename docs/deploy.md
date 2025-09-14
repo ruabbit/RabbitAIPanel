@@ -171,6 +171,22 @@ npm run dev
 
 （可选）生产可用 Nginx/ Caddy 提供静态站点，以及反向代理到后端 8000 端口。
 
+### 5.3 Debug 与启动时回写（可选）
+
+无需修改 `frontend/.env` 也可通过 npm scripts 开启调试与写回：
+
+```bash
+# 仅开启 Debug（显示“配置”与 API 指示，Dev 覆盖生效）
+npm run dev:debug:host
+
+# 同时开启 Debug + 启动时回写（将 .env 的 VITE_API_BASE 写入 localStorage.api_base）
+npm run dev:debug:writeenv -- --host 0.0.0.0 --port 5173
+```
+
+说明：
+- Debug=ON 时才会读取 “开发配置” 中的覆盖（api_base、dev_api_key、x-dev-user-id 等）。
+- 启动时回写默认关闭，仅用于排查前端是否成功拿到 .env 的 `VITE_API_BASE`。
+
 ## 6. 本地 Demo 验证
 
 1) Navbar“配置”中填写：

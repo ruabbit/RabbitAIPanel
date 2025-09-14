@@ -80,6 +80,15 @@ This milestone (M1) delivers the plugin framework and data layer.
 - API draft: `docs/api.md`
 - Implementation plan: `docs/implementation_plan.md`
 - Billing & Lago integration: `docs/billing_and_lago.md`
+ - Frontend header controls & debug gating: `docs/header_controls.md`
+ - Deploy guide (includes frontend scripts): `docs/deploy.md`
+
+## Frontend Dev Tips
+- Frontend env lives in `frontend/.env` and uses `VITE_` prefix (e.g. `VITE_API_BASE`).
+- Dev-only overrides (API base, dev headers) are gated by `VITE_DEBUG` and are ignored in production.
+- Use npm scripts to enable debug without editing `.env`:
+  - `npm run dev:debug:host` — enable debug with host bind
+  - `npm run dev:debug:writeenv -- --host 0.0.0.0 --port 5173` — debug + write `.env` `VITE_API_BASE` into `localStorage.api_base` on startup (diagnostics)
 
 ## Roadmap
 - M1: Plugin framework + models + provider skeletons
