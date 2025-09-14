@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { FiMenu, FiBell, FiHome, FiUsers, FiFolder, FiCalendar, FiFileText, FiPieChart, FiSettings, FiChevronDown, FiX, FiLogIn } from 'react-icons/fi'
 import DevSettingsModal from './DevSettingsModal'
 import { startSocialLogin, currentApiBase } from '../utils/api'
+import { isDebug, isLogged } from '../utils/dev'
 
 function navIcon(name) {
   switch (name) {
@@ -23,6 +24,8 @@ export default function AppFrame({ title = '', items = [], children }) {
   const [loginLoading, setLoginLoading] = useState(false)
   const location = useLocation()
   const base = currentApiBase()
+  const debug = isDebug()
+  const logged = isLogged()
 
   const Sidebar = (
     <div className="relative flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4 ring-1 ring-white/10">
@@ -94,27 +97,31 @@ export default function AppFrame({ title = '', items = [], children }) {
           <div className="flex flex-1 items-center justify-between">
             <div className="text-sm font-medium text-gray-700">{title}</div>
             <div className="flex items-center gap-x-4">
-              <span className="hidden md:inline text-xs text-gray-500">API: {base || '未设置'}</span>
-              <button type="button" className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900" onClick={() => setDevOpen(true)}>
-                <FiSettings className="size-5" />
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-500"
-                onClick={async () => {
-                  try {
-                    setLoginLoading(true)
-                    const provider = localStorage.getItem('social_provider') || 'google'
-                    const { redirect_to } = await startSocialLogin(provider)
-                    if (redirect_to) window.location.href = redirect_to
-                  } catch (e) {
-                    alert(`启动登录失败: ${e}`)
-                  } finally { setLoginLoading(false) }
-                }}
-                disabled={loginLoading}
-              >
-                <FiLogIn className="mr-1" />{loginLoading ? '登录中…' : '使用社交登录'}
-              </button>
+              {debug && <span className="hidden md:inline text-xs text-gray-500">API: {base || '未设置'}</span>}
+              {debug && (
+                <button type="button" className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900" onClick={() => setDevOpen(true)}>
+                  <FiSettings className="size-5" />
+                </button>
+              )}
+              {(debug || !logged) && (
+                <button
+                  type="button"
+                  className="inline-flex items-center bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-500"
+                  onClick={async () => {
+                    try {
+                      setLoginLoading(true)
+                      const provider = localStorage.getItem('social_provider') || 'google'
+                      const { redirect_to } = await startSocialLogin(provider)
+                      if (redirect_to) window.location.href = redirect_to
+                    } catch (e) {
+                      alert(`启动登录失败: ${e}`)
+                    } finally { setLoginLoading(false) }
+                  }}
+                  disabled={loginLoading}
+                >
+                  <FiLogIn className="mr-1" />{loginLoading ? '登录中…' : (debug ? '社交登录测试' : '使用社交登录')}
+                </button>
+              )}
               <button type="button" className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500" aria-label="Notifications">
                 <FiBell className="size-5" />
               </button>
@@ -126,7 +133,7 @@ export default function AppFrame({ title = '', items = [], children }) {
           </div>
         </div>
 
-        {!base && (
+        {debug && !base && (
           <div className="lg:pl-72">
             <div className="bg-yellow-50 border-b border-yellow-200 text-amber-800 text-xs px-4 py-2">
               未设置 API 基址。请点击右上角“齿轮/配置”设置，或在 .env 中配置 VITE_API_BASE。

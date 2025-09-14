@@ -1,6 +1,8 @@
+import { isDebug } from './dev'
+
 function getApiBase() {
   try {
-    const fromLocal = typeof window !== 'undefined' ? (localStorage.getItem('api_base') || '') : ''
+    const fromLocal = isDebug() && typeof window !== 'undefined' ? (localStorage.getItem('api_base') || '') : ''
     const fromEnv = (import.meta?.env?.VITE_API_BASE || '')
     const base = (fromLocal || fromEnv || '').trim()
     return base.replace(/\/+$/,'')
@@ -22,10 +24,12 @@ export function currentApiBase() { return getApiBase() }
 
 function headers() {
   const h = { 'Content-Type': 'application/json' }
-  const apiKey = localStorage.getItem('dev_api_key')
-  const devUserId = localStorage.getItem('dev_user_id')
-  if (apiKey) h['x-api-key'] = apiKey
-  if (devUserId) h['x-dev-user-id'] = devUserId
+  if (isDebug()) {
+    const apiKey = localStorage.getItem('dev_api_key')
+    const devUserId = localStorage.getItem('dev_user_id')
+    if (apiKey) h['x-api-key'] = apiKey
+    if (devUserId) h['x-dev-user-id'] = devUserId
+  }
   return h
 }
 

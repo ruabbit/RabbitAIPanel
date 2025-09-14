@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { FiSettings, FiLogIn, FiMenu } from 'react-icons/fi'
 import { useUI } from '../context/UIContext'
 import { startSocialLogin, currentApiBase } from '../utils/api'
+import { isDebug, isLogged } from '../utils/dev'
 import DevSettingsModal from './DevSettingsModal'
 
 export default function Navbar() {
@@ -21,6 +22,8 @@ export default function Navbar() {
   }
 
   const base = currentApiBase()
+  const debug = isDebug()
+  const logged = isLogged()
 
   return (
     <header className="bg-white border-b">
@@ -34,12 +37,16 @@ export default function Navbar() {
         <nav className="flex items-center gap-4">
           <Link to="/dashboard" className={`text-sm ${location.pathname.startsWith('/dashboard') ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>用户后台</Link>
           <Link to="/admin" className={`text-sm ${location.pathname.startsWith('/admin') ? 'text-primary' : 'text-gray-600'} hover:text-primary`}>管理后台</Link>
-          <span className="hidden md:inline text-xs text-gray-500">API: {base || '未设置'}</span>
-          <button onClick={() => setOpen(true)} className="inline-flex items-center text-gray-600 hover:text-primary"><FiSettings className="mr-1" />配置</button>
-          <button onClick={onLogin} className="inline-flex items-center bg-primary text-white px-3 py-1.5 rounded hover:bg-primary-dark"><FiLogIn className="mr-1"/>使用社交登录</button>
+          {debug && <span className="hidden md:inline text-xs text-gray-500">API: {base || '未设置'}</span>}
+          {debug && (
+            <button onClick={() => setOpen(true)} className="inline-flex items-center text-gray-600 hover:text-primary"><FiSettings className="mr-1" />配置</button>
+          )}
+          {(debug || !logged) && (
+            <button onClick={onLogin} className="inline-flex items-center bg-primary text-white px-3 py-1.5 rounded hover:bg-primary-dark"><FiLogIn className="mr-1"/>{debug ? '社交登录测试' : '使用社交登录'}</button>
+          )}
         </nav>
       </div>
-      {!base && (
+      {debug && !base && (
         <div className="bg-yellow-50 border-t border-yellow-200 text-amber-800 text-xs px-4 py-2">
           未设置 API 基址。请点击右上角“配置”设置，或在 .env 中配置 VITE_API_BASE。
         </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { isDebug } from '../utils/dev'
 import { toast } from '../utils/toast'
 
 export default function DevSettingsModal({ open, onClose }) {
@@ -35,6 +36,11 @@ export default function DevSettingsModal({ open, onClose }) {
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
       <div className="bg-white rounded shadow-lg w-full max-w-lg p-6">
         <h3 className="text-lg font-semibold mb-4">开发配置</h3>
+        {!isDebug() && (
+          <div className="mb-3 text-xs text-amber-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+            DEBUG 未启用（VITE_DEBUG）。此处的配置将不会生效。
+          </div>
+        )}
         <div className="space-y-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">API 基址（可选，覆盖 .env 的 VITE_API_BASE）</label>
