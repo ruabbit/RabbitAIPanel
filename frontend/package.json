@@ -8,8 +8,8 @@
     "dev:host": "vite --host 0.0.0.0 --port 5173",
     "dev:debug": "VITE_DEBUG=1 vite",
     "dev:debug:host": "VITE_DEBUG=1 vite --host 0.0.0.0 --port 5173",
-    "dev:writeenv": "VITE_WRITE_ENV_ON_START=1 vite",
-    "dev:debug:writeenv": "VITE_DEBUG=1 VITE_WRITE_ENV_ON_START=1 vite",
+    "dev:writeenv": "WRITE_ENV_FILE=1 vite",
+    "dev:debug:writeenv": "VITE_DEBUG=1 WRITE_ENV_FILE=1 vite",
     "build": "vite build",
     "preview": "vite preview",
     "preview:host": "vite preview --host 0.0.0.0 --port 5173"
