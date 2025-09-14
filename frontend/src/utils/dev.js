@@ -1,7 +1,11 @@
 export function isDebug() {
   try {
     const v = import.meta?.env?.VITE_DEBUG
-    return v === true || v === 'true' || v === '1'
+    if (v === true) return true
+    if (v === false) return false
+    const s = String(v ?? '').trim().toLowerCase()
+    if (!s) return false
+    return !(s === '0' || s === 'false' || s === 'off' || s === 'no')
   } catch {
     return false
   }
