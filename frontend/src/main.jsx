@@ -18,6 +18,7 @@ import Overdraft from './pages/user/Overdraft'
 import Wallets from './pages/user/Wallets'
 import Ledger from './pages/user/Ledger'
 import Proxy from './pages/user/Proxy'
+import Health from './pages/Health'
 
 // admin pages with sidebar
 import AdminLayout from './pages/admin/AdminLayout'
@@ -77,7 +78,8 @@ const router = createBrowserRouter([
       },
     ],
   },
-  { path: '/auth/callback', element: <AuthCallback /> },
+      { path: '/auth/callback', element: <AuthCallback /> },
+  { path: '/health', element: <Health /> },
 ])
 
 createRoot(document.getElementById('root')).render(
