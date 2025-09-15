@@ -174,10 +174,11 @@ export async function createPlan({ name, type, currency = 'USD', meta }) {
   return res.json()
 }
 
-export async function listPlans({ q, type, limit = 20, offset = 0 } = {}) {
+export async function listPlans({ q, type, status, limit = 20, offset = 0 } = {}) {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
   if (type && type !== 'all') params.set('type', type)
+  if (status && status !== 'all') params.set('status', status)
   params.set('limit', String(limit))
   params.set('offset', String(offset))
   const qs = params.toString()

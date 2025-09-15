@@ -163,11 +163,12 @@ def api_get_assignment(entity_type: str, entity_id: int, ctx: dict = Depends(dev
 def api_list_plans(
     q: str | None = Query(None),
     type: str | None = Query(None),
+    status: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     ctx: dict = Depends(dev_auth),
 ):
-    rows, total = list_plans(q=q, type=type, limit=limit, offset=offset)
+    rows, total = list_plans(q=q, type=type, status=status, limit=limit, offset=offset)
     return {
         "request_id": ctx.get("request_id"),
         "total": total,
