@@ -391,7 +391,7 @@ def get_subscription_by_stripe_id(stripe_subscription_id: str) -> Subscription:
 
 
 def list_subscriptions(
-    *, customer_id: Optional[int] = None, plan_id: Optional[int] = None, limit: int = 50, offset: int = 0
+    *, customer_id: Optional[int] = None, plan_id: Optional[int] = None, status: Optional[str] = None, limit: int = 50, offset: int = 0
 ) -> tuple[list[Subscription], int]:
     with SessionLocal() as s:
         q = s.query(Subscription)
@@ -399,9 +399,23 @@ def list_subscriptions(
             q = q.filter(Subscription.customer_id == customer_id)
         if plan_id is not None:
             q = q.filter(Subscription.plan_id == plan_id)
+        if status in ("active", "canceled", "paused"):
+            q = q.filter(Subscription.status == status)
         total = q.count()
         rows = q.order_by(Subscription.id.desc()).offset(offset).limit(limit).all()
         return list(rows), int(total)
+
+
+def update_subscription_status(subscription_id: int, *, status: str) -> Subscription:
+    if status not in ("active", "canceled", "paused"):
+        raise ValueError("invalid_status")
+    with session_scope() as s:
+        sub = s.get(Subscription, subscription_id)
+        if not sub:
+            raise ValueError("subscription not found")
+        sub.status = status
+        s.flush()
+        return sub
 
 
 def process_stripe_subscription_webhook(headers: dict, body: bytes, request_id: str | None = None) -> dict:

@@ -96,10 +96,11 @@ export async function listInvoices({ customerId, limit = 50, offset = 0 }) {
   return res.json()
 }
 
-export async function listSubscriptions({ customerId, planId, limit = 50, offset = 0 }) {
+export async function listSubscriptions({ customerId, planId, status, limit = 50, offset = 0 }) {
   const params = new URLSearchParams()
   if (customerId) params.set('customer_id', customerId)
   if (planId) params.set('plan_id', planId)
+  if (status && status !== 'all') params.set('status', status)
   params.set('limit', String(limit))
   params.set('offset', String(offset))
   const res = await fetch(`${apiBase()}/v1/billing/subscriptions?${params.toString()}`, { headers: headers() })
@@ -354,6 +355,14 @@ export async function getInvoice(invoiceId) {
 
 export async function getSubscription(subscriptionId) {
   const res = await fetch(`${apiBase()}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function updateSubscriptionStatus({ subscriptionId, status }) {
+  const res = await fetch(`${apiBase()}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}/status`, {
+    method: 'PATCH', headers: headers(), body: JSON.stringify({ status })
+  })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }

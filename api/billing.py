@@ -11,6 +11,7 @@ from middleware.billing.service import (
     get_subscription,
     get_subscription_by_stripe_id,
     list_subscriptions,
+    update_subscription_status,
 )
 from middleware.billing.service import (
     create_price_mapping,
@@ -200,12 +201,13 @@ def api_get_subscription_by_stripe(stripe_subscription_id: str, ctx: dict = Depe
 def api_list_subscriptions(
     customer_id: int | None = Query(None),
     plan_id: int | None = Query(None),
+    status: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     ctx: dict = Depends(dev_auth),
 ):
     try:
-        rows, total = list_subscriptions(customer_id=customer_id, plan_id=plan_id, limit=limit, offset=offset)
+        rows, total = list_subscriptions(customer_id=customer_id, plan_id=plan_id, status=status, limit=limit, offset=offset)
         return {
             "request_id": ctx.get("request_id"),
             "total": total,
@@ -220,6 +222,29 @@ def api_list_subscriptions(
                 }
                 for sub in rows
             ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class UpdateSubStatusBody(BaseModel):
+    status: str
+
+
+@router.patch("/subscriptions/{subscription_id}/status")
+def api_update_subscription_status(subscription_id: int, body: UpdateSubStatusBody, ctx: dict = Depends(dev_auth)):
+    try:
+        sub = update_subscription_status(subscription_id, status=body.status)
+        return {
+            "request_id": ctx.get("request_id"),
+            "subscription": {
+                "id": sub.id,
+                "customer_id": sub.customer_id,
+                "plan_id": sub.plan_id,
+                "status": sub.status,
+                "stripe_subscription_id": sub.stripe_subscription_id,
+                "created_at": sub.created_at.isoformat(),
+            },
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

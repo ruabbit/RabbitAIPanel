@@ -103,3 +103,8 @@ export default function Subscriptions() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面为旧版“订阅”入口，已由新版订阅列表/详情页替代：
+// - 列表：/admin/subscriptions
+// - 详情：/admin/subscriptions/:subscriptionId
+// 保留以便过渡，建议优先在新版页面管理订阅。

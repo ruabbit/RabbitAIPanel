@@ -35,6 +35,8 @@ import Customers from './pages/admin/Customers'
 import CustomersList from './pages/admin/customers/CustomersList'
 import CustomerDetail from './pages/admin/customers/CustomerDetail'
 import Subscriptions from './pages/admin/Subscriptions'
+import SubscriptionsList from './pages/admin/subscriptions/SubscriptionsList'
+import SubscriptionDetail from './pages/admin/subscriptions/SubscriptionDetail'
 import Invoices from './pages/admin/Invoices'
 import StripeEnsure from './pages/admin/StripeEnsure'
 import TeamPeriod from './pages/admin/TeamPeriod'
@@ -81,7 +83,9 @@ const router = createBrowserRouter([
           { path: 'customers', element: <CustomersList /> },
           { path: 'customers/:customerId', element: <CustomerDetail /> },
           { path: 'customers/legacy', element: <Customers /> },
-          { path: 'subscriptions', element: <Subscriptions /> },
+          { path: 'subscriptions', element: <SubscriptionsList /> },
+          { path: 'subscriptions/:subscriptionId', element: <SubscriptionDetail /> },
+          { path: 'subscriptions/legacy', element: <Subscriptions /> },
           { path: 'invoices', element: <Invoices /> },
           { path: 'stripe-ensure', element: <StripeEnsure /> },
           { path: 'team-period', element: <TeamPeriod /> },
