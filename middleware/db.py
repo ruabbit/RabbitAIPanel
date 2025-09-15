@@ -11,10 +11,17 @@ class Base(DeclarativeBase):
 
 
 engine = create_engine(settings.DATABASE_URL, echo=False, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+# Avoid expiring attributes on commit so returned ORM objects keep their values
+# even after the session commits/closes (common in service-layer patterns).
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+    future=True,
+    expire_on_commit=False,
+)
 
 
 def init_db() -> None:
     from . import models  # noqa: F401 ensure models are imported
     Base.metadata.create_all(bind=engine)
-

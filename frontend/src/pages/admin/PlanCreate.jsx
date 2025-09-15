@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { createPlan, updatePlanMeta } from '../../utils/api'
+import { createPlan, updatePlanMeta, upsertDailyLimit, upsertUsagePlan } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
 import Select from '../../components/Select'
@@ -12,13 +12,27 @@ export default function PlanCreate() {
   const [meta, setMeta] = useState('{"stripe_price_id":"price_xxx_optional"}')
   const [planId, setPlanId] = useState('')
   const [msg, setMsg] = useState('')
+  // type-specific fields
+  const [dlc, setDlc] = useState('2000')
+  const [policy, setPolicy] = useState('block')
+  const [reset, setReset] = useState('00:00')
+  const [billing, setBilling] = useState('monthly')
+  const [minCommit, setMinCommit] = useState('')
+  const [creditGrant, setCreditGrant] = useState('')
   const onCreate = async () => {
     setMsg('')
     try {
       const m = meta ? JSON.parse(meta) : undefined
       const res = await createPlan({ name, type, currency, meta: m })
-      setPlanId(String(res.plan_id))
-      setMsg(`创建成功 plan_id=${res.plan_id}`)
+      const pid = Number(res.plan_id)
+      setPlanId(String(pid))
+      // follow-up: initialize type-specific config
+      if (type === 'daily_limit') {
+        await upsertDailyLimit({ planId: pid, dailyLimitCents: Number(dlc || '0'), overflowPolicy: policy, resetTime: reset })
+      } else if (type === 'usage') {
+        await upsertUsagePlan({ planId: pid, billingCycle: billing, minCommitCents: minCommit ? Number(minCommit) : undefined, creditGrantCents: creditGrant ? Number(creditGrant) : undefined })
+      }
+      setMsg(`创建成功 plan_id=${pid}`)
     } catch (e) { setMsg(String(e)) }
   }
   const onUpdateMeta = async () => {
@@ -53,6 +67,39 @@ export default function PlanCreate() {
               <input id="pl-meta" className="rr-input" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='{"stripe_price_id":"price_xxx_optional"}' />
             </div>
           </div>
+          {/* type-specific inputs */}
+          {type === 'daily_limit' && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+              <div>
+                <label className="rr-label" htmlFor="pl-dlc">daily_limit_cents</label>
+                <input id="pl-dlc" className="rr-input" value={dlc} onChange={e=>setDlc(e.target.value)} placeholder="例如：2000" />
+              </div>
+              <div>
+                <label className="rr-label" htmlFor="pl-policy">overflow_policy</label>
+                <Select id="pl-policy" value={policy} onChange={v=>setPolicy(String(v))} options={[{value:'block',label:'block'},{value:'grace',label:'grace'},{value:'degrade',label:'degrade'}]} placeholder="选择策略" />
+              </div>
+              <div>
+                <label className="rr-label" htmlFor="pl-reset">reset_time</label>
+                <input id="pl-reset" className="rr-input" value={reset} onChange={e=>setReset(e.target.value)} placeholder="HH:MM" />
+              </div>
+            </div>
+          )}
+          {type === 'usage' && (
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-3">
+              <div>
+                <label className="rr-label" htmlFor="pl-billing">billing_cycle</label>
+                <Select id="pl-billing" value={billing} onChange={v=>setBilling(String(v))} options={[{value:'monthly',label:'monthly'},{value:'weekly',label:'weekly'}]} placeholder="选择周期" />
+              </div>
+              <div>
+                <label className="rr-label" htmlFor="pl-min-commit">min_commit_cents（可选）</label>
+                <input id="pl-min-commit" className="rr-input" value={minCommit} onChange={e=>setMinCommit(e.target.value)} placeholder="例如：0" />
+              </div>
+              <div>
+                <label className="rr-label" htmlFor="pl-credit">credit_grant_cents（可选）</label>
+                <input id="pl-credit" className="rr-input" value={creditGrant} onChange={e=>setCreditGrant(e.target.value)} placeholder="例如：0" />
+              </div>
+            </div>
+          )}
           <div className="mt-4 flex gap-2 items-center">
             <Button onClick={onCreate} color="blue">创建 Plan</Button>
             <Button onClick={onUpdateMeta} variant="outline" color="blue">更新 Meta</Button>
