@@ -11,6 +11,8 @@ import {
   generateInvoice,
   pushInvoiceToStripe,
   ensureStripeCustomer,
+  getCustomer,
+  updateCustomer,
 } from '../../../utils/api'
 import { devSeedUsage, getDailyReport, getSummaryReport } from '../../../utils/api'
 import { isDebug, currentUserId } from '../../../utils/dev'
@@ -25,6 +27,24 @@ export default function CustomerDetail() {
   const { customerId } = useParams()
   const [tab, setTab] = useState('overview')
   const cid = useMemo(()=> customerId ? Number(customerId) : undefined, [customerId])
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [stripe, setStripe] = useState('')
+  const [saveMsg, setSaveMsg] = useState('')
+
+  useEffect(()=>{
+    const loadCust = async () => {
+      if (!cid) return
+      try {
+        const r = await getCustomer(cid)
+        const c = r.customer
+        setName(c?.name || '')
+        setEmail(c?.email || '')
+        setStripe(c?.stripe_customer_id || '')
+      } catch {}
+    }
+    loadCust()
+  }, [cid])
 
   return (
     <Container size="xl">
@@ -41,7 +61,25 @@ export default function CustomerDetail() {
 
         {tab === 'overview' && (
           <Card>
-            <div className="text-sm text-gray-700">在此处展示客户基础信息与最近活动（后续增强）。当前仅提供订阅与发票管理。</div>
+            <div className="text-sm text-gray-700">客户信息</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+              <div>
+                <label className="rr-label" htmlFor="cd-name">name</label>
+                <input id="cd-name" className="rr-input" value={name} onChange={e=>setName(e.target.value)} placeholder="客户名称" />
+              </div>
+              <div>
+                <label className="rr-label" htmlFor="cd-email">email</label>
+                <input id="cd-email" className="rr-input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="客户邮箱" />
+              </div>
+              <div>
+                <label className="rr-label" htmlFor="cd-stripe">stripe_customer_id（可选）</label>
+                <input id="cd-stripe" className="rr-input" value={stripe} onChange={e=>setStripe(e.target.value)} placeholder="cus_xxx" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <Button color="blue" onClick={async()=>{ try{ setSaveMsg(''); await updateCustomer({ customerId: cid, name, email, stripeCustomerId: stripe }); setSaveMsg('已保存'); } catch(e){ setSaveMsg(String(e)) } }}>保存</Button>
+              {saveMsg && <span className="ml-3 text-sm text-gray-700">{saveMsg}</span>}
+            </div>
           </Card>
         )}
 
@@ -136,7 +174,7 @@ function TabSubscriptions({ customerId }) {
                 <thead>
                   <tr>
                     <th scope="col">id</th>
-                    <th scope="col">plan_id</th>
+                    <th scope="col">plan</th>
                     <th scope="col">status</th>
                     <th scope="col">stripe_subscription_id</th>
                     <th scope="col">created_at</th>
@@ -147,7 +185,7 @@ function TabSubscriptions({ customerId }) {
                   {subs.map(s => (
                     <tr key={s.id}>
                       <td>{s.id}</td>
-                      <td>{s.plan_id}</td>
+                      <td>{s.plan_name || s.plan_id}</td>
                       <td>{s.status}</td>
                       <td>{s.stripe_subscription_id || '-'}</td>
                       <td>{s.created_at?.slice(0,19).replace('T',' ') || '-'}</td>

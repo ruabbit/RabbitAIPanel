@@ -238,6 +238,8 @@ class Customer(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     entity_type: Mapped[str] = mapped_column(String(16))  # user|team
     entity_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[Optional[str]] = mapped_column(String(200))
+    email: Mapped[Optional[str]] = mapped_column(String(320))
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(128))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
 

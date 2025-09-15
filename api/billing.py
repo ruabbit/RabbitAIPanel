@@ -12,6 +12,9 @@ from middleware.billing.service import (
     get_subscription_by_stripe_id,
     list_subscriptions,
     update_subscription_status,
+    list_subscriptions_with_join,
+    list_customers,
+    update_customer,
 )
 from middleware.billing.service import (
     create_price_mapping,
@@ -22,6 +25,7 @@ from middleware.billing.service import (
 )
 from middleware.plans.service import get_plan
 from middleware.billing.service import list_customers
+from middleware.billing.service import get_customer
 
 
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
@@ -30,17 +34,20 @@ router = APIRouter(prefix="/v1/billing", tags=["billing"])
 class CreateCustomerBody(BaseModel):
     entity_type: str  # user|team
     entity_id: int
+    name: str | None = None
+    email: str | None = None
     stripe_customer_id: str | None = None
 
 
 @router.post("/customers")
 def api_create_customer(body: CreateCustomerBody, ctx: dict = Depends(dev_auth)):
-    c = create_customer(entity_type=body.entity_type, entity_id=body.entity_id, stripe_customer_id=body.stripe_customer_id)
+    c = create_customer(entity_type=body.entity_type, entity_id=body.entity_id, name=body.name, email=body.email, stripe_customer_id=body.stripe_customer_id)
     return {"request_id": ctx.get("request_id"), "customer_id": c.id}
 
 
 @router.get("/customers")
 def api_list_customers(
+    q: str | None = Query(None),
     entity_type: str | None = Query(None),
     entity_id: int | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
@@ -48,7 +55,7 @@ def api_list_customers(
     ctx: dict = Depends(dev_auth),
 ):
     try:
-        rows, total = list_customers(entity_type=entity_type, entity_id=entity_id, limit=limit, offset=offset)
+        rows, total = list_customers(q=q, entity_type=entity_type, entity_id=entity_id, limit=limit, offset=offset)
         return {
             "request_id": ctx.get("request_id"),
             "total": total,
@@ -57,11 +64,59 @@ def api_list_customers(
                     "id": c.id,
                     "entity_type": c.entity_type,
                     "entity_id": c.entity_id,
+                    "name": c.name,
+                    "email": c.email,
                     "stripe_customer_id": c.stripe_customer_id,
                     "created_at": c.created_at.isoformat(),
                 }
                 for c in rows
             ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class UpdateCustomerBody(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    stripe_customer_id: str | None = None
+
+
+@router.patch("/customers/{customer_id}")
+def api_update_customer(customer_id: int, body: UpdateCustomerBody, ctx: dict = Depends(dev_auth)):
+    try:
+        c = update_customer(customer_id, name=body.name, email=body.email, stripe_customer_id=body.stripe_customer_id)
+        return {
+            "request_id": ctx.get("request_id"),
+            "customer": {
+                "id": c.id,
+                "entity_type": c.entity_type,
+                "entity_id": c.entity_id,
+                "name": c.name,
+                "email": c.email,
+                "stripe_customer_id": c.stripe_customer_id,
+                "created_at": c.created_at.isoformat(),
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/customers/{customer_id}")
+def api_get_customer(customer_id: int, ctx: dict = Depends(dev_auth)):
+    try:
+        c = get_customer(customer_id)
+        return {
+            "request_id": ctx.get("request_id"),
+            "customer": {
+                "id": c.id,
+                "entity_type": c.entity_type,
+                "entity_id": c.entity_id,
+                "name": c.name,
+                "email": c.email,
+                "stripe_customer_id": c.stripe_customer_id,
+                "created_at": c.created_at.isoformat(),
+            },
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -208,18 +263,21 @@ def api_list_subscriptions(
     ctx: dict = Depends(dev_auth),
 ):
     try:
-        rows, total = list_subscriptions(customer_id=customer_id, plan_id=plan_id, status=status, limit=limit, offset=offset)
+        rows, total = list_subscriptions_with_join(customer_id=customer_id, plan_id=plan_id, status=status, limit=limit, offset=offset)
         return {
             "request_id": ctx.get("request_id"),
             "total": total,
             "subscriptions": [
                 {
-                    "id": sub.id,
-                    "customer_id": sub.customer_id,
-                    "plan_id": sub.plan_id,
-                    "status": sub.status,
-                    "stripe_subscription_id": sub.stripe_subscription_id,
-                    "created_at": sub.created_at.isoformat(),
+                    "id": sub["id"],
+                    "customer_id": sub["customer_id"],
+                    "plan_id": sub["plan_id"],
+                    "status": sub["status"],
+                    "stripe_subscription_id": sub["stripe_subscription_id"],
+                    "created_at": sub["created_at"].isoformat(),
+                    "customer_name": sub.get("customer_name"),
+                    "customer_email": sub.get("customer_email"),
+                    "plan_name": sub.get("plan_name"),
                 }
                 for sub in rows
             ],

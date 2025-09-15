@@ -322,20 +322,39 @@ export async function getOverdraftReport({ userId, days = 7 }) {
 // ===== Billing basic
 export async function createCustomer({ entityType, entityId, stripeCustomerId }) {
   const res = await fetch(`${apiBase()}/v1/billing/customers`, {
-    method: 'POST', headers: headers(), body: JSON.stringify({ entity_type: entityType, entity_id: entityId, stripe_customer_id: stripeCustomerId })
+    method: 'POST', headers: headers(), body: JSON.stringify({ entity_type: entityType, entity_id: entityId, stripe_customer_id: stripeCustomerId, name: arguments[0]?.name, email: arguments[0]?.email })
   })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
 
-export async function listCustomers({ entityType, entityId, limit = 20, offset = 0 } = {}) {
+export async function listCustomers({ q, entityType, entityId, limit = 20, offset = 0 } = {}) {
   const params = new URLSearchParams()
+  if (q) params.set('q', q)
   if (entityType && entityType !== 'all') params.set('entity_type', entityType)
   if (entityId) params.set('entity_id', entityId)
   params.set('limit', String(limit))
   params.set('offset', String(offset))
   const url = `${apiBase()}/v1/billing/customers?${params.toString()}`
   const res = await fetch(url, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function updateCustomer({ customerId, name, email, stripeCustomerId }) {
+  const body = { }
+  if (name !== undefined) body.name = name
+  if (email !== undefined) body.email = email
+  if (stripeCustomerId !== undefined) body.stripe_customer_id = stripeCustomerId
+  const res = await fetch(`${apiBase()}/v1/billing/customers/${encodeURIComponent(customerId)}`, {
+    method: 'PATCH', headers: headers(), body: JSON.stringify(body)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getCustomer(customerId) {
+  const res = await fetch(`${apiBase()}/v1/billing/customers/${encodeURIComponent(customerId)}`, { headers: headers() })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }

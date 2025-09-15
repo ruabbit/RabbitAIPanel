@@ -9,6 +9,7 @@ import { listCustomers, createCustomer } from '../../../utils/api'
 export default function CustomersList() {
   const navigate = useNavigate()
   const [entityType, setEntityType] = useState('all')
+  const [q, setQ] = useState('')
   const [entityId, setEntityId] = useState('')
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(false)
@@ -21,6 +22,8 @@ export default function CustomersList() {
   const [newType, setNewType] = useState('user')
   const [newEntity, setNewEntity] = useState('')
   const [stripeId, setStripeId] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
   const [msg, setMsg] = useState('')
 
   const page = useMemo(() => Math.floor(offset / limit) + 1, [offset, limit])
@@ -29,7 +32,7 @@ export default function CustomersList() {
   const load = async (opts={}) => {
     setLoading(true); setErr('')
     try {
-      const res = await listCustomers({ entityType, entityId, limit, offset, ...opts })
+      const res = await listCustomers({ q, entityType, entityId, limit, offset, ...opts })
       const list = res?.customers || []
       setCustomers(Array.isArray(list) ? list : [])
       setTotal(Number(res?.total || (Array.isArray(list) ? list.length : 0)))
@@ -46,9 +49,9 @@ export default function CustomersList() {
         // 自动生成一个较大的随机ID，避免与常用自增ID重叠；仅用于演示/测试
         eid = String(100000 + Math.floor(Math.random()*900000))
       }
-      const res = await createCustomer({ entityType: newType, entityId: Number(eid), stripeCustomerId: stripeId || undefined })
+      const res = await createCustomer({ entityType: newType, entityId: Number(eid), name: (newName||undefined), email: (newEmail||undefined), stripeCustomerId: stripeId || undefined })
       setMsg(`创建成功 customer_id=${res.customer_id}（entity_id=${eid}）`)
-      setNewEntity(''); setStripeId('')
+      setNewEntity(''); setStripeId(''); setNewName(''); setNewEmail('')
       // reload first page to include new
       setOffset(0); await load({ offset: 0 })
     } catch (e) { setMsg(String(e)) }
@@ -60,7 +63,11 @@ export default function CustomersList() {
         <div className="text-xl font-semibold text-gray-800">客户</div>
 
         <Card>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div className="md:col-span-2">
+              <label className="rr-label" htmlFor="cu-q">关键字</label>
+              <input id="cu-q" className="rr-input" value={q} onChange={e=>setQ(e.target.value)} placeholder="按名称/邮箱搜索" />
+            </div>
             <div>
               <label className="rr-label" htmlFor="cu-type">实体类型</label>
               <Select id="cu-type" value={entityType} onChange={v=>setEntityType(String(v))} options={[{value:'all',label:'全部'},{value:'user',label:'user'},{value:'team',label:'team'}]} />
@@ -80,7 +87,7 @@ export default function CustomersList() {
 
         <Card>
           <div className="font-semibold mb-2">创建客户</div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end">
             <div>
               <label className="rr-label" htmlFor="nc-type">entity_type</label>
               <Select id="nc-type" value={newType} onChange={v=>setNewType(String(v))} options={[{value:'user',label:'user'},{value:'team',label:'team'}]} />
@@ -88,6 +95,14 @@ export default function CustomersList() {
             <div>
               <label className="rr-label" htmlFor="nc-eid">entity_id（留空自动生成）</label>
               <input id="nc-eid" className="rr-input" value={newEntity} onChange={e=>setNewEntity(e.target.value)} placeholder="可留空自动生成" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="nc-name">name（可选）</label>
+              <input id="nc-name" className="rr-input" value={newName} onChange={e=>setNewName(e.target.value)} placeholder="客户名称" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="nc-email">email（可选）</label>
+              <input id="nc-email" className="rr-input" value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="客户邮箱" />
             </div>
             <div className="md:col-span-2">
               <label className="rr-label" htmlFor="nc-stripe">stripe_customer_id（可选）</label>
@@ -111,6 +126,8 @@ export default function CustomersList() {
                     <thead>
                       <tr>
                         <th scope="col">id</th>
+                        <th scope="col">name</th>
+                        <th scope="col">email</th>
                         <th scope="col">entity_type</th>
                         <th scope="col">entity_id</th>
                         <th scope="col">stripe_customer_id</th>
@@ -124,6 +141,8 @@ export default function CustomersList() {
                       {customers.map((c, i) => (
                         <tr key={c.id || i} className="cursor-pointer hover:bg-gray-50" onClick={()=> c.id && navigate(`/admin/customers/${encodeURIComponent(c.id)}`)}>
                           <td>{c.id}</td>
+                          <td>{c.name || '-'}</td>
+                          <td>{c.email || '-'}</td>
                           <td>{c.entity_type}</td>
                           <td>{c.entity_id}</td>
                           <td>{c.stripe_customer_id || '-'}</td>

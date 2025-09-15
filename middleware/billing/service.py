@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..db import SessionLocal
-from ..models import Customer, Subscription, Invoice, InvoiceItem, Usage, EventOutbox, ProviderEvent, StripePriceMapping
+from ..models import Customer, Subscription, Invoice, InvoiceItem, Usage, EventOutbox, ProviderEvent, StripePriceMapping, Plan
 from ..plans.service import utc8_day_start
 from ..config import settings
 
@@ -34,24 +34,61 @@ def session_scope() -> Iterator[Session]:
         s.close()
 
 
-def create_customer(*, entity_type: str, entity_id: int, stripe_customer_id: Optional[str] = None) -> Customer:
+def create_customer(*, entity_type: str, entity_id: int, name: Optional[str] = None, email: Optional[str] = None, stripe_customer_id: Optional[str] = None) -> Customer:
     with session_scope() as s:
-        c = Customer(entity_type=entity_type, entity_id=entity_id, stripe_customer_id=stripe_customer_id)
+        c = Customer(entity_type=entity_type, entity_id=entity_id, name=name, email=email, stripe_customer_id=stripe_customer_id)
         s.add(c)
         s.flush()
         return c
 
 
-def list_customers(*, entity_type: Optional[str] = None, entity_id: Optional[int] = None, limit: int = 50, offset: int = 0) -> tuple[list[Customer], int]:
+def list_customers(*, q: Optional[str] = None, entity_type: Optional[str] = None, entity_id: Optional[int] = None, limit: int = 50, offset: int = 0) -> tuple[list[Customer], int]:
     with _session() as s:
         q = s.query(Customer)
         if entity_type in ("user", "team"):
             q = q.filter(Customer.entity_type == entity_type)
         if entity_id is not None:
             q = q.filter(Customer.entity_id == entity_id)
+        if isinstance(globals().get('q'), str) and globals().get('q'):
+            pass
         total = q.count()
         rows = q.order_by(Customer.id.desc()).offset(offset).limit(limit).all()
         return list(rows), int(total)
+
+def list_customers(q: Optional[str] = None, entity_type: Optional[str] = None, entity_id: Optional[int] = None, limit: int = 50, offset: int = 0) -> tuple[list[Customer], int]:
+    with _session() as s:
+        query = s.query(Customer)
+        if entity_type in ("user", "team"):
+            query = query.filter(Customer.entity_type == entity_type)
+        if entity_id is not None:
+            query = query.filter(Customer.entity_id == entity_id)
+        if q:
+            pattern = f"%{q}%"
+            query = query.filter((Customer.name.ilike(pattern)) | (Customer.email.ilike(pattern)))
+        total = query.count()
+        rows = query.order_by(Customer.id.desc()).offset(offset).limit(limit).all()
+        return list(rows), int(total)
+
+def update_customer(customer_id: int, *, name: Optional[str] = None, email: Optional[str] = None, stripe_customer_id: Optional[str] = None) -> Customer:
+    with session_scope() as s:
+        c = s.get(Customer, customer_id)
+        if not c:
+            raise ValueError("customer not found")
+        if name is not None:
+            c.name = name
+        if email is not None:
+            c.email = email
+        if stripe_customer_id is not None:
+            c.stripe_customer_id = stripe_customer_id
+        s.flush()
+        return c
+
+def get_customer(customer_id: int) -> Customer:
+    with SessionLocal() as s:
+        c = s.get(Customer, customer_id)
+        if not c:
+            raise ValueError("customer not found")
+        return c
 
 
 def create_subscription(*, customer_id: int, plan_id: int, stripe_subscription_id: Optional[str] = None) -> Subscription:
@@ -406,6 +443,32 @@ def list_subscriptions(
         total = q.count()
         rows = q.order_by(Subscription.id.desc()).offset(offset).limit(limit).all()
         return list(rows), int(total)
+
+def list_subscriptions_with_join(*, customer_id: Optional[int] = None, plan_id: Optional[int] = None, status: Optional[str] = None, limit: int = 50, offset: int = 0) -> tuple[list[dict], int]:
+    with SessionLocal() as s:
+        q = s.query(Subscription, Customer, Plan).join(Customer, Subscription.customer_id == Customer.id).join(Plan, Subscription.plan_id == Plan.id)
+        if customer_id is not None:
+            q = q.filter(Subscription.customer_id == customer_id)
+        if plan_id is not None:
+            q = q.filter(Subscription.plan_id == plan_id)
+        if status in ("active", "canceled", "paused"):
+            q = q.filter(Subscription.status == status)
+        total = q.count()
+        rows = q.order_by(Subscription.id.desc()).offset(offset).limit(limit).all()
+        items: list[dict] = []
+        for sub, cust, plan in rows:
+            items.append({
+                "id": sub.id,
+                "customer_id": sub.customer_id,
+                "plan_id": sub.plan_id,
+                "status": sub.status,
+                "stripe_subscription_id": sub.stripe_subscription_id,
+                "created_at": sub.created_at,
+                "customer_name": cust.name,
+                "customer_email": cust.email,
+                "plan_name": plan.name,
+            })
+        return items, int(total)
 
 
 def update_subscription_status(subscription_id: int, *, status: str) -> Subscription:

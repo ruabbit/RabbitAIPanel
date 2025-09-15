@@ -73,7 +73,10 @@ export default function SubscriptionsList() {
                       <tr>
                         <th scope="col">id</th>
                         <th scope="col">customer_id</th>
+                        <th scope="col">customer_name</th>
+                        <th scope="col">customer_email</th>
                         <th scope="col">plan_id</th>
+                        <th scope="col">plan_name</th>
                         <th scope="col">status</th>
                         <th scope="col">stripe_subscription_id</th>
                         <th scope="col">created_at</th>
@@ -87,7 +90,10 @@ export default function SubscriptionsList() {
                         <tr key={s.id || i} className="cursor-pointer hover:bg-gray-50" onClick={()=> s.id && navigate(`/admin/subscriptions/${encodeURIComponent(s.id)}`)}>
                           <td>{s.id}</td>
                           <td>{s.customer_id}</td>
+                          <td>{s.customer_name || '-'}</td>
+                          <td>{s.customer_email || '-'}</td>
                           <td>{s.plan_id}</td>
+                          <td>{s.plan_name || '-'}</td>
                           <td>{s.status}</td>
                           <td>{s.stripe_subscription_id || '-'}</td>
                           <td>{s.created_at?.slice(0,19).replace('T',' ') || '-'}</td>
@@ -112,4 +118,3 @@ export default function SubscriptionsList() {
     </Container>
   )
 }
-

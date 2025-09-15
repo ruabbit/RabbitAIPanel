@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 import asyncio
 
 from middleware.db import init_db
+from middleware.db_migrate import run_migrations
 from middleware.payments.service import create_checkout, process_webhook, refund_payment, get_payment_status
 from middleware.billing.service import process_stripe_invoice_webhook, process_stripe_subscription_webhook
 from middleware.config import settings
@@ -40,6 +41,12 @@ logger = logging.getLogger(__name__)
 def on_startup() -> None:
     # Ensure DB tables exist
     init_db()
+    # Run DB migrations to target layer
+    try:
+        layer = run_migrations()
+        logger.info("db.migrated layer=%s", layer)
+    except Exception as e:
+        logger.error("db.migration_failed err=%s", e)
     # Setup logging baseline
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     # Periodic LiteLLM budget sync
