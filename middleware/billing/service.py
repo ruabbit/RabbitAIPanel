@@ -28,6 +28,18 @@ def create_customer(*, entity_type: str, entity_id: int, stripe_customer_id: Opt
         return c
 
 
+def list_customers(*, entity_type: Optional[str] = None, entity_id: Optional[int] = None, limit: int = 50, offset: int = 0) -> tuple[list[Customer], int]:
+    with _session() as s:
+        q = s.query(Customer)
+        if entity_type in ("user", "team"):
+            q = q.filter(Customer.entity_type == entity_type)
+        if entity_id is not None:
+            q = q.filter(Customer.entity_id == entity_id)
+        total = q.count()
+        rows = q.order_by(Customer.id.desc()).offset(offset).limit(limit).all()
+        return list(rows), int(total)
+
+
 def create_subscription(*, customer_id: int, plan_id: int, stripe_subscription_id: Optional[str] = None) -> Subscription:
     with _session() as s:
         sub = Subscription(customer_id=customer_id, plan_id=plan_id, stripe_subscription_id=stripe_subscription_id)

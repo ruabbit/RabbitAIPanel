@@ -80,6 +80,22 @@ def get_plan(plan_id: int) -> Optional[Plan]:
         return s.get(Plan, plan_id)
 
 
+def list_plans(*, q: Optional[str] = None, type: Optional[str] = None, limit: int = 50, offset: int = 0) -> tuple[list[Plan], int]:
+    """List plans with optional name filter and type filter.
+
+    Returns (rows, total).
+    """
+    with session_scope() as s:
+        query = s.query(Plan)
+        if q:
+            query = query.filter(Plan.name.ilike(f"%{q}%"))
+        if type in ("daily_limit", "usage"):
+            query = query.filter(Plan.type == type)
+        total = query.count()
+        rows = query.order_by(Plan.id.desc()).offset(offset).limit(limit).all()
+        return list(rows), int(total)
+
+
 def update_plan_meta(plan_id: int, meta: dict) -> None:
     with session_scope() as s:
         p = s.get(Plan, plan_id)

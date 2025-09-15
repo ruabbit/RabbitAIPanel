@@ -20,6 +20,7 @@ from middleware.billing.service import (
     get_active_price_for_plan,
 )
 from middleware.plans.service import get_plan
+from middleware.billing.service import list_customers
 
 
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
@@ -35,6 +36,34 @@ class CreateCustomerBody(BaseModel):
 def api_create_customer(body: CreateCustomerBody, ctx: dict = Depends(dev_auth)):
     c = create_customer(entity_type=body.entity_type, entity_id=body.entity_id, stripe_customer_id=body.stripe_customer_id)
     return {"request_id": ctx.get("request_id"), "customer_id": c.id}
+
+
+@router.get("/customers")
+def api_list_customers(
+    entity_type: str | None = Query(None),
+    entity_id: int | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    ctx: dict = Depends(dev_auth),
+):
+    try:
+        rows, total = list_customers(entity_type=entity_type, entity_id=entity_id, limit=limit, offset=offset)
+        return {
+            "request_id": ctx.get("request_id"),
+            "total": total,
+            "customers": [
+                {
+                    "id": c.id,
+                    "entity_type": c.entity_type,
+                    "entity_id": c.entity_id,
+                    "stripe_customer_id": c.stripe_customer_id,
+                    "created_at": c.created_at.isoformat(),
+                }
+                for c in rows
+            ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 class CreateSubscriptionBody(BaseModel):

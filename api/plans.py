@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from .deps import dev_auth
@@ -14,6 +14,7 @@ from middleware.plans.service import (
     assign_plan,
     get_plan,
     get_assignment,
+    list_plans,
 )
 
 
@@ -141,3 +142,26 @@ def api_get_assignment(entity_type: str, entity_id: int, ctx: dict = Depends(dev
     if not pa:
         return {"request_id": ctx.get("request_id"), "assignment": None}
     return {"request_id": ctx.get("request_id"), "assignment": {"id": pa.id, "plan_id": pa.plan_id, "status": pa.status, "effective_from": pa.effective_from.isoformat() if pa.effective_from else None, "effective_to": pa.effective_to.isoformat() if pa.effective_to else None, "timezone": pa.timezone}}
+@router.get("")
+def api_list_plans(
+    q: str | None = Query(None),
+    type: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    ctx: dict = Depends(dev_auth),
+):
+    rows, total = list_plans(q=q, type=type, limit=limit, offset=offset)
+    return {
+        "request_id": ctx.get("request_id"),
+        "total": total,
+        "plans": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "type": p.type,
+                "currency": p.currency,
+                "status": p.status,
+            }
+            for p in rows
+        ],
+    }
