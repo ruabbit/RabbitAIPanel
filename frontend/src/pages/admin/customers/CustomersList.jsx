@@ -41,8 +41,13 @@ export default function CustomersList() {
   const onCreate = async () => {
     setMsg('')
     try {
-      const res = await createCustomer({ entityType: newType, entityId: Number(newEntity), stripeCustomerId: stripeId || undefined })
-      setMsg(`创建成功 customer_id=${res.customer_id}`)
+      let eid = newEntity.trim()
+      if (!eid) {
+        // 自动生成一个较大的随机ID，避免与常用自增ID重叠；仅用于演示/测试
+        eid = String(100000 + Math.floor(Math.random()*900000))
+      }
+      const res = await createCustomer({ entityType: newType, entityId: Number(eid), stripeCustomerId: stripeId || undefined })
+      setMsg(`创建成功 customer_id=${res.customer_id}（entity_id=${eid}）`)
       setNewEntity(''); setStripeId('')
       // reload first page to include new
       setOffset(0); await load({ offset: 0 })
@@ -81,8 +86,8 @@ export default function CustomersList() {
               <Select id="nc-type" value={newType} onChange={v=>setNewType(String(v))} options={[{value:'user',label:'user'},{value:'team',label:'team'}]} />
             </div>
             <div>
-              <label className="rr-label" htmlFor="nc-eid">entity_id</label>
-              <input id="nc-eid" className="rr-input" value={newEntity} onChange={e=>setNewEntity(e.target.value)} placeholder="必填" />
+              <label className="rr-label" htmlFor="nc-eid">entity_id（留空自动生成）</label>
+              <input id="nc-eid" className="rr-input" value={newEntity} onChange={e=>setNewEntity(e.target.value)} placeholder="可留空自动生成" />
             </div>
             <div className="md:col-span-2">
               <label className="rr-label" htmlFor="nc-stripe">stripe_customer_id（可选）</label>
@@ -144,4 +149,3 @@ export default function CustomersList() {
     </Container>
   )
 }
-

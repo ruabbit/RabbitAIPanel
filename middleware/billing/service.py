@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterator
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -19,9 +19,23 @@ logger = logging.getLogger(__name__)
 def _session() -> Session:
     return SessionLocal()
 
+from contextlib import contextmanager
+
+@contextmanager
+def session_scope() -> Iterator[Session]:
+    s = SessionLocal()
+    try:
+        yield s
+        s.commit()
+    except Exception:
+        s.rollback()
+        raise
+    finally:
+        s.close()
+
 
 def create_customer(*, entity_type: str, entity_id: int, stripe_customer_id: Optional[str] = None) -> Customer:
-    with _session() as s:
+    with session_scope() as s:
         c = Customer(entity_type=entity_type, entity_id=entity_id, stripe_customer_id=stripe_customer_id)
         s.add(c)
         s.flush()
@@ -41,7 +55,7 @@ def list_customers(*, entity_type: Optional[str] = None, entity_id: Optional[int
 
 
 def create_subscription(*, customer_id: int, plan_id: int, stripe_subscription_id: Optional[str] = None) -> Subscription:
-    with _session() as s:
+    with session_scope() as s:
         sub = Subscription(customer_id=customer_id, plan_id=plan_id, stripe_subscription_id=stripe_subscription_id)
         s.add(sub)
         s.flush()
@@ -57,7 +71,7 @@ def generate_invoice(*, customer_id: int, date_from: str, date_to: str) -> Invoi
     start = utc8_day_start(base_from, hhmm="00:00")
     end = utc8_day_start(base_to, hhmm="00:00") + dt.timedelta(days=1)
 
-    with _session() as s:
+    with session_scope() as s:
         inv = Invoice(customer_id=customer_id, period_start=start, period_end=end, currency="USD", status="draft")
         s.add(inv)
         s.flush()
@@ -93,7 +107,7 @@ def ensure_stripe_customer(customer_id: int) -> str:
     except Exception as e:
         raise RuntimeError("stripe library not installed") from e
     stripe.api_key = settings.STRIPE_SECRET_KEY
-    with _session() as s:
+    with session_scope() as s:
         cust = s.get(Customer, customer_id)
         if not cust:
             raise ValueError("customer not found")
@@ -101,7 +115,6 @@ def ensure_stripe_customer(customer_id: int) -> str:
             return cust.stripe_customer_id
         sc = stripe.Customer.create(description=f"Customer {cust.entity_type}:{cust.entity_id}")
         cust.stripe_customer_id = sc.id
-        s.commit()
         return sc.id
 
 
@@ -114,7 +127,7 @@ def ensure_stripe_subscription(customer_id: int, plan_id: int, *, stripe_price_i
         raise RuntimeError("stripe library not installed") from e
     stripe.api_key = settings.STRIPE_SECRET_KEY
     sc_id = ensure_stripe_customer(customer_id)
-    with _session() as s:
+    with session_scope() as s:
         sub = s.query(Subscription).filter_by(customer_id=customer_id, plan_id=plan_id, status="active").first()
         if sub and sub.stripe_subscription_id:
             return sub.stripe_subscription_id
@@ -131,7 +144,6 @@ def ensure_stripe_subscription(customer_id: int, plan_id: int, *, stripe_price_i
             s.add(sub)
         else:
             sub.stripe_subscription_id = ss.id
-        s.commit()
         return ss.id
 
 
@@ -143,7 +155,7 @@ def push_invoice_to_stripe(invoice_id: int) -> str:
     except Exception as e:
         raise RuntimeError("stripe library not installed") from e
     stripe.api_key = settings.STRIPE_SECRET_KEY
-    with _session() as s:
+    with session_scope() as s:
         inv = s.get(Invoice, invoice_id)
         if not inv:
             raise ValueError("invoice not found")
@@ -168,7 +180,6 @@ def push_invoice_to_stripe(invoice_id: int) -> str:
         except Exception:
             pass
         inv.stripe_invoice_id = si.id
-        s.commit()
         return si.id
 
 
@@ -291,7 +302,7 @@ def process_stripe_invoice_webhook(headers: dict, body: bytes, request_id: str |
 # --- Stripe Price Mapping services ---
 
 def create_price_mapping(*, plan_id: int, stripe_price_id: str, currency: str = "USD", active: bool = True) -> StripePriceMapping:
-    with _session() as s:
+    with session_scope() as s:
         m = StripePriceMapping(plan_id=plan_id, stripe_price_id=stripe_price_id, currency=currency.upper(), active=active)
         s.add(m)
         s.flush()
@@ -299,7 +310,7 @@ def create_price_mapping(*, plan_id: int, stripe_price_id: str, currency: str = 
 
 
 def update_price_mapping(mapping_id: int, *, stripe_price_id: str | None = None, currency: str | None = None, active: bool | None = None) -> StripePriceMapping:
-    with _session() as s:
+    with session_scope() as s:
         m = s.get(StripePriceMapping, mapping_id)
         if not m:
             raise ValueError("price_mapping not found")
@@ -314,7 +325,7 @@ def update_price_mapping(mapping_id: int, *, stripe_price_id: str | None = None,
 
 
 def delete_price_mapping(mapping_id: int) -> None:
-    with _session() as s:
+    with session_scope() as s:
         m = s.get(StripePriceMapping, mapping_id)
         if not m:
             return
