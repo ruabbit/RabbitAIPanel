@@ -1,46 +1,95 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Container from '../../../primer/Container'
 import Card from '../../../primer/Card'
 import Button from '../../../primer/Button'
+import Select from '../../../components/Select'
+import { listPlans } from '../../../utils/api'
 
 export default function PlansList() {
-  const [planId, setPlanId] = useState('')
   const navigate = useNavigate()
+  const [q, setQ] = useState('')
+  const [type, setType] = useState('all')
+  const [plans, setPlans] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [limit, setLimit] = useState(20)
+  const [offset, setOffset] = useState(0)
+
+  const load = async (opts={}) => {
+    setLoading(true); setErr('')
+    try {
+      const res = await listPlans({ q, type, limit, offset, ...opts })
+      const list = res?.plans || res?.items || res?.data || []
+      setPlans(Array.isArray(list) ? list : [])
+    } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+  }
+
+  useEffect(() => { load() }, [])
 
   return (
     <Container size="lg">
       <div className="mt-6 space-y-4">
-        <div className="text-xl font-semibold text-gray-800">计划</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-semibold text-gray-800">计划</div>
+          <Link to="/admin/plan/create" className="inline-flex items-center justify-center rr-btn rr-btn-primary">创建计划</Link>
+        </div>
 
         <Card>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+            <div className="md:col-span-2">
+              <label className="rr-label" htmlFor="pl-q">关键字</label>
+              <input id="pl-q" className="rr-input" value={q} onChange={e=>setQ(e.target.value)} placeholder="按名称/备注搜索" />
+            </div>
             <div>
-              <label className="rr-label" htmlFor="go-plan">打开计划详情</label>
-              <input id="go-plan" className="rr-input" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="输入 plan_id" />
+              <label className="rr-label" htmlFor="pl-type">类型</label>
+              <Select id="pl-type" value={type} onChange={v=>setType(String(v))} options={[{value:'all',label:'全部'},{value:'daily_limit',label:'daily_limit'},{value:'usage',label:'usage'}]} placeholder="选择类型" />
             </div>
             <div className="flex items-end">
-              <Button className="w-full" color="blue" onClick={()=>{ if (planId) navigate(`/admin/plans/${encodeURIComponent(planId)}`) }}>打开</Button>
+              <Button onClick={()=>{ setOffset(0); load({ offset: 0 }) }} color="blue" className="w-full">筛选</Button>
             </div>
             <div className="flex items-end">
-              <Link to="/admin/plan/create" className="inline-flex items-center justify-center rr-btn rr-btn-primary w-full">创建计划（旧）</Link>
+              <Button variant="outline" onClick={()=> load()} className="w-full">刷新</Button>
             </div>
           </div>
-          <div className="mt-3 text-xs text-gray-500">提示：后续将提供计划搜索与筛选。在此期间，可通过 plan_id 直接进入详情页；亦可使用旧的“创建计划”入口。</div>
         </Card>
 
         <Card>
-          <div className="text-sm text-gray-700">正在逐步将“日限额/用量/计价规则/映射/分配”等操作整合到“计划详情”中。旧页面仍保留以便回退：</div>
-          <ul className="mt-2 text-sm list-disc list-inside text-gray-600 space-y-1">
-            <li><Link className="text-blue-600 hover:underline" to="/admin/plan/daily">计划-日限额（旧）</Link></li>
-            <li><Link className="text-blue-600 hover:underline" to="/admin/plan/usage">计划-用量（旧）</Link></li>
-            <li><Link className="text-blue-600 hover:underline" to="/admin/plan/pricerule">计划-计价规则（旧）</Link></li>
-            <li><Link className="text-blue-600 hover:underline" to="/admin/price-mappings">价格映射（旧）</Link></li>
-            <li><Link className="text-blue-600 hover:underline" to="/admin/plan/assign">计划-分配（旧）</Link></li>
-          </ul>
+          {err && <div className="text-sm text-red-600">{err}</div>}
+          {loading && <div className="text-sm text-gray-500">加载中…</div>}
+          {!loading && (
+            <div className="rr-table-flow">
+              <div className="rr-table-scroll">
+                <div className="rr-table-inner">
+                  <table className="rr-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">id</th>
+                        <th scope="col">name</th>
+                        <th scope="col">type</th>
+                        <th scope="col">currency</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plans.length === 0 && (
+                        <tr><td colSpan={4} className="text-center text-sm text-gray-500">无结果</td></tr>
+                      )}
+                      {plans.map((p, i) => (
+                        <tr key={p.id || i} className="cursor-pointer hover:bg-gray-50" onClick={()=> p.id && navigate(`/admin/plans/${encodeURIComponent(p.id)}`)}>
+                          <td>{p.id}</td>
+                          <td className="text-blue-600 hover:underline" onClick={(e)=>{ e.stopPropagation(); if(p.id) navigate(`/admin/plans/${encodeURIComponent(p.id)}`) }}>{p.name || '(未命名)'}</td>
+                          <td>{p.type || '-'}</td>
+                          <td>{p.currency || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </Container>
   )
 }
-

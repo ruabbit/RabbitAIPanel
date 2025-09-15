@@ -3,7 +3,7 @@ import { isDebug } from './dev'
 function getApiBase() {
   try {
     const fromLocal = isDebug() && typeof window !== 'undefined' ? (localStorage.getItem('api_base') || '') : ''
-    const fromEnv = (import.meta?.env?.VITE_API_BASE || '')
+    const fromEnv = (import.meta.env && import.meta.env.VITE_API_BASE) || ''
     let base = (fromLocal || fromEnv || '').trim()
     if (!base) return ''
 
@@ -170,6 +170,19 @@ export async function createPlan({ name, type, currency = 'USD', meta }) {
   const res = await fetch(`${apiBase()}/v1/plans`, {
     method: 'POST', headers: headers(), body: JSON.stringify({ name, type, currency, meta })
   })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function listPlans({ q, type, limit = 20, offset = 0 } = {}) {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (type && type !== 'all') params.set('type', type)
+  params.set('limit', String(limit))
+  params.set('offset', String(offset))
+  const qs = params.toString()
+  const url = `${apiBase()}/v1/plans${qs ? `?${qs}` : ''}`
+  const res = await fetch(url, { headers: headers() })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
