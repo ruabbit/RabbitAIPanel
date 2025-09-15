@@ -12,6 +12,8 @@ import {
   pushInvoiceToStripe,
   ensureStripeCustomer,
 } from '../../../utils/api'
+import { devSeedUsage } from '../../../utils/api'
+import { isDebug, currentUserId } from '../../../utils/dev'
 
 function TabButton({ active, onClick, children }) {
   return (
@@ -61,6 +63,14 @@ function TabSubscriptions({ customerId }) {
 
   const [planId, setPlanId] = useState('')
   const [msg, setMsg] = useState('')
+
+  // debug seed
+  const debug = isDebug()
+  const [seedUserId, setSeedUserId] = useState(currentUserId('1'))
+  const [seedCount, setSeedCount] = useState('10')
+  const [seedMin, setSeedMin] = useState('100')
+  const [seedMax, setSeedMax] = useState('2000')
+  const [seedModel, setSeedModel] = useState('')
 
   const load = async (opts={}) => {
     if (!customerId) return
@@ -133,6 +143,44 @@ function TabSubscriptions({ customerId }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {debug && (
+        <div className="mt-6 border-t pt-4">
+          <div className="font-semibold mb-2 text-amber-700">调试：为用户生成用量假数据</div>
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div>
+              <label className="rr-label" htmlFor="seed-uid">user_id</label>
+              <input id="seed-uid" className="rr-input" value={seedUserId} onChange={e=>setSeedUserId(e.target.value)} placeholder="用户ID" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="seed-count">count</label>
+              <input id="seed-count" className="rr-input" value={seedCount} onChange={e=>setSeedCount(e.target.value)} placeholder="10" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="seed-min">min_tokens</label>
+              <input id="seed-min" className="rr-input" value={seedMin} onChange={e=>setSeedMin(e.target.value)} placeholder="100" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="seed-max">max_tokens</label>
+              <input id="seed-max" className="rr-input" value={seedMax} onChange={e=>setSeedMax(e.target.value)} placeholder="2000" />
+            </div>
+            <div>
+              <label className="rr-label" htmlFor="seed-model">model（可选）</label>
+              <input id="seed-model" className="rr-input" value={seedModel} onChange={e=>setSeedModel(e.target.value)} placeholder="留空随机" />
+            </div>
+            <div className="flex items-end">
+              <Button variant="outline" color="blue" onClick={async ()=>{
+                try {
+                  setMsg('')
+                  const r = await devSeedUsage({ userId: Number(seedUserId), count: Number(seedCount||'10'), minTokens: Number(seedMin||'100'), maxTokens: Number(seedMax||'2000'), model: seedModel || undefined })
+                  setMsg(`已生成 ${r.created} 条用量假数据`)
+                } catch (e) { setMsg(String(e)) }
+              }}>生成用量假数据</Button>
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">提示：若用户未分配计划或未配置价格规则，系统将为部分记录使用最小随机费用。</div>
         </div>
       )}
     </Card>
@@ -247,4 +295,3 @@ function TabDanger({ customerId }) {
       {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
     </Card>
   )}
-

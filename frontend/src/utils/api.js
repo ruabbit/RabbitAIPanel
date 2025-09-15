@@ -385,3 +385,14 @@ export async function getTeamPeriod({ teamId, dateFrom, dateTo, model, success, 
   if (!res.ok) throw new Error(await res.text())
   return format === 'csv' ? res.text() : res.json()
 }
+
+// ===== Dev helpers
+export async function devSeedUsage({ userId, count = 10, minTokens = 100, maxTokens = 2000, model }) {
+  const body = { user_id: userId, count, min_tokens: minTokens, max_tokens: maxTokens }
+  if (model) body.model = model
+  const res = await fetch(`${apiBase()}/v1/dev/seed/usage`, {
+    method: 'POST', headers: headers(), body: JSON.stringify(body)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}

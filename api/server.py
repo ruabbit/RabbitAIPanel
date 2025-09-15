@@ -25,6 +25,7 @@ from .proxy import router as proxy_router
 from .lago import router as lago_router
 from .reports import router as reports_router
 from .billing import router as billing_router
+from .dev import router as dev_router
 from .auth import router as auth_router
 from middleware.integrations.litellm_sync import sync_wallets_to_litellm
 from middleware.billing.service import process_outbox_once
@@ -365,6 +366,7 @@ app.include_router(proxy_router)
 app.include_router(lago_router)
 app.include_router(reports_router)
 app.include_router(billing_router)
+app.include_router(dev_router)
 app.include_router(auth_router)
 
 
