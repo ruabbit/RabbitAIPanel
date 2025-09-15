@@ -187,6 +187,16 @@ export async function listPlans({ q, type, limit = 20, offset = 0 } = {}) {
   return res.json()
 }
 
+export async function updatePlanStatus({ planId, status }) {
+  const res = await fetch(`${apiBase()}/v1/plans/${encodeURIComponent(planId)}/status`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({ status }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 export async function upsertDailyLimit({ planId, dailyLimitCents, overflowPolicy = 'block', resetTime = '00:00', timezone = 'UTC+8' }) {
   const res = await fetch(`${apiBase()}/v1/plans/daily_limit`, {
     method: 'POST', headers: headers(), body: JSON.stringify({ plan_id: planId, daily_limit_cents: dailyLimitCents, overflow_policy: overflowPolicy, reset_time: resetTime, timezone })

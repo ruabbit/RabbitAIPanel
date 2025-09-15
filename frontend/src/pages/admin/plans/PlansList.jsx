@@ -68,6 +68,7 @@ export default function PlansList() {
                         <th scope="col">name</th>
                         <th scope="col">type</th>
                         <th scope="col">currency</th>
+                        <th scope="col">status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -80,6 +81,7 @@ export default function PlansList() {
                           <td className="text-blue-600 hover:underline" onClick={(e)=>{ e.stopPropagation(); if(p.id) navigate(`/admin/plans/${encodeURIComponent(p.id)}`) }}>{p.name || '(未命名)'}</td>
                           <td>{p.type || '-'}</td>
                           <td>{p.currency || '-'}</td>
+                          <td>{p.status || '-'}</td>
                         </tr>
                       ))}
                     </tbody>

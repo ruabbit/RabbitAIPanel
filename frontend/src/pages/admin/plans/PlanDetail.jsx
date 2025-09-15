@@ -21,6 +21,7 @@ import {
   ensureStripeCustomer,
   ensureStripeSubscription,
   ensureStripeSubscriptionByPlan,
+  updatePlanStatus,
 } from '../../../utils/api'
 
 function TabButton({ active, onClick, children }) {
@@ -94,7 +95,7 @@ export default function PlanDetail() {
         {tab === 'usage' && <TabUsage planId={pidNum} />}
         {tab === 'pricing' && <TabPricing planId={pidNum} />}
         {tab === 'assign' && <TabAssign planId={pidNum} />}
-        {tab === 'danger' && <TabDanger planId={pidNum} />}
+        {tab === 'danger' && <TabDanger planId={pidNum} plan={plan} onStatusChanged={(st)=>{ if (plan) setPlan({...plan, status: st}); }} />}
       </div>
     </Container>
   )
@@ -333,10 +334,11 @@ function TabAssign({ planId }) {
   )
 }
 
-function TabDanger({ planId }) {
+function TabDanger({ planId, plan, onStatusChanged }) {
   const [customerId, setCustomerId] = useState('1')
   const [priceId, setPriceId] = useState('')
   const [msg, setMsg] = useState('')
+  const status = plan?.status || 'active'
 
   const ensureCustomer = async () => { setMsg(''); try { const res = await ensureStripeCustomer({ customerId }); setMsg(`customer ok: ${res.stripe_customer_id || 'ok'}`) } catch(e){ setMsg(String(e)) } }
   const ensureSubscription = async () => { setMsg(''); try { await ensureStripeSubscription({ customerId, planId, stripePriceId: priceId }); setMsg('订阅已确保') } catch(e){ setMsg(String(e)) } }
@@ -345,6 +347,7 @@ function TabDanger({ planId }) {
   return (
     <Card>
       <div className="text-sm text-gray-700">涉及外部系统的敏感操作，请谨慎操作。</div>
+      <div className="mt-2 text-xs text-gray-500">当前计划状态：<span className="font-mono">{status}</span></div>
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label className="rr-label" htmlFor="dg-cust">customer_id</label>
@@ -360,8 +363,18 @@ function TabDanger({ planId }) {
         <Button variant="outline" color="blue" onClick={ensureByPlan}>Ensure Subscription（by plan）</Button>
         <Button color="blue" onClick={ensureSubscription}>Ensure Subscription（by price）</Button>
       </div>
+      <div className="mt-6 border-t pt-4">
+        <div className="text-sm text-red-700 font-medium">计划归档/恢复</div>
+        <div className="text-xs text-gray-500 mb-2">归档不会物理删除计划，仅将状态设为 archived，建议用于禁用计划和防误操作。</div>
+        <div className="flex flex-wrap gap-2">
+          {status !== 'archived' ? (
+            <Button variant="outline" color="red" onClick={async ()=>{ if (!planId) return; if (confirm('确认将该计划归档？归档后不可分配和使用。')) { try { setMsg(''); await updatePlanStatus({ planId, status: 'archived' }); onStatusChanged && onStatusChanged('archived'); setMsg('计划已归档'); } catch(e){ setMsg(String(e)) } } }}>归档计划</Button>
+          ) : (
+            <Button variant="outline" color="blue" onClick={async ()=>{ if (!planId) return; if (confirm('确认恢复该计划为 active？')) { try { setMsg(''); await updatePlanStatus({ planId, status: 'active' }); onStatusChanged && onStatusChanged('active'); setMsg('计划已恢复为 active'); } catch(e){ setMsg(String(e)) } } }}>恢复计划</Button>
+          )}
+        </div>
+      </div>
       {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
     </Card>
   )
 }
-

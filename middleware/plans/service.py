@@ -96,6 +96,22 @@ def list_plans(*, q: Optional[str] = None, type: Optional[str] = None, limit: in
         return list(rows), int(total)
 
 
+def set_plan_status(plan_id: int, *, status: str) -> Plan:
+    """Set plan status to 'active' or 'archived'. Returns the updated plan.
+
+    Hard delete is intentionally avoided to preserve referential integrity and history.
+    """
+    if status not in ("active", "archived"):
+        raise ValueError("invalid_status")
+    with session_scope() as s:
+        p = s.get(Plan, plan_id)
+        if not p:
+            raise ValueError("plan not found")
+        p.status = status
+        s.flush()
+        return p
+
+
 def update_plan_meta(plan_id: int, meta: dict) -> None:
     with session_scope() as s:
         p = s.get(Plan, plan_id)

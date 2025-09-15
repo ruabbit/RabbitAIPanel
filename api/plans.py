@@ -15,6 +15,7 @@ from middleware.plans.service import (
     get_plan,
     get_assignment,
     list_plans,
+    set_plan_status,
 )
 
 
@@ -134,6 +135,22 @@ def api_get_plan(plan_id: int, ctx: dict = Depends(dev_auth)):
     if not p:
         raise HTTPException(status_code=404, detail="plan not found")
     return {"request_id": ctx.get("request_id"), "plan": {"id": p.id, "name": p.name, "type": p.type, "currency": p.currency, "status": p.status, "meta": p.meta}}
+
+
+class UpdatePlanStatusBody(BaseModel):
+    status: str = Field(pattern=r"^(active|archived)$")
+
+
+@router.patch("/{plan_id}/status")
+def api_update_plan_status(plan_id: int, body: UpdatePlanStatusBody, ctx: dict = Depends(dev_auth)):
+    try:
+        p = set_plan_status(plan_id, status=body.status)
+        return {
+            "request_id": ctx.get("request_id"),
+            "plan": {"id": p.id, "name": p.name, "type": p.type, "currency": p.currency, "status": p.status},
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/assignment/{entity_type}/{entity_id}")
