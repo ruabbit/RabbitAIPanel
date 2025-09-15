@@ -29,7 +29,11 @@ import PlanPriceRule from './pages/admin/PlanPriceRule'
 import PlanAssign from './pages/admin/PlanAssign'
 import PlanDetail from './pages/admin/PlanDetail'
 import PriceMappings from './pages/admin/PriceMappings'
+import PlansList from './pages/admin/plans/PlansList'
+import NewPlanDetail from './pages/admin/plans/PlanDetail'
 import Customers from './pages/admin/Customers'
+import CustomersList from './pages/admin/customers/CustomersList'
+import CustomerDetail from './pages/admin/customers/CustomerDetail'
 import Subscriptions from './pages/admin/Subscriptions'
 import Invoices from './pages/admin/Invoices'
 import StripeEnsure from './pages/admin/StripeEnsure'
@@ -61,7 +65,12 @@ const router = createBrowserRouter([
         path: 'admin',
         element: <AdminLayout />,
         children: [
-          { index: true, element: <PlanCreate /> },
+          { index: true, element: <PlansList /> },
+          // New plans routes
+          { path: 'plans', element: <PlansList /> },
+          { path: 'plans/:planId', element: <NewPlanDetail /> },
+
+          // Legacy routes (kept for fallback)
           { path: 'plan/create', element: <PlanCreate /> },
           { path: 'plan/daily', element: <PlanDaily /> },
           { path: 'plan/usage', element: <PlanUsage /> },
@@ -69,7 +78,9 @@ const router = createBrowserRouter([
           { path: 'plan/assign', element: <PlanAssign /> },
           { path: 'plan/detail', element: <PlanDetail /> },
           { path: 'price-mappings', element: <PriceMappings /> },
-          { path: 'customers', element: <Customers /> },
+          { path: 'customers', element: <CustomersList /> },
+          { path: 'customers/:customerId', element: <CustomerDetail /> },
+          { path: 'customers/legacy', element: <Customers /> },
           { path: 'subscriptions', element: <Subscriptions /> },
           { path: 'invoices', element: <Invoices /> },
           { path: 'stripe-ensure', element: <StripeEnsure /> },

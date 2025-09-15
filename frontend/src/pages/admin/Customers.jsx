@@ -42,3 +42,8 @@ export default function Customers() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面为旧版“客户（创建）”入口，已由新版客户列表/详情页替代：
+// - 列表：/admin/customers
+// - 详情：/admin/customers/:customerId
+// 保留以便过渡，建议优先在新版页面管理客户。

@@ -326,6 +326,18 @@ export async function createCustomer({ entityType, entityId, stripeCustomerId })
   return res.json()
 }
 
+export async function listCustomers({ entityType, entityId, limit = 20, offset = 0 } = {}) {
+  const params = new URLSearchParams()
+  if (entityType && entityType !== 'all') params.set('entity_type', entityType)
+  if (entityId) params.set('entity_id', entityId)
+  params.set('limit', String(limit))
+  params.set('offset', String(offset))
+  const url = `${apiBase()}/v1/billing/customers?${params.toString()}`
+  const res = await fetch(url, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 export async function createSubscription({ customerId, planId, stripeSubscriptionId }) {
   const res = await fetch(`${apiBase()}/v1/billing/subscriptions`, {
     method: 'POST', headers: headers(), body: JSON.stringify({ customer_id: customerId, plan_id: planId, stripe_subscription_id: stripeSubscriptionId })
