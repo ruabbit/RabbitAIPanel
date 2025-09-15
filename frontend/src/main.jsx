@@ -42,6 +42,8 @@ import InvoicesList from './pages/admin/invoices/InvoicesList'
 import InvoiceDetail from './pages/admin/invoices/InvoiceDetail'
 import StripeEnsure from './pages/admin/StripeEnsure'
 import TeamPeriod from './pages/admin/TeamPeriod'
+import TeamsList from './pages/admin/teams/TeamsList'
+import TeamDetail from './pages/admin/teams/TeamDetail'
 
 const router = createBrowserRouter([
   {
@@ -91,6 +93,9 @@ const router = createBrowserRouter([
           { path: 'invoices', element: <InvoicesList /> },
           { path: 'invoices/:invoiceId', element: <InvoiceDetail /> },
           { path: 'invoices/legacy', element: <Invoices /> },
+          { path: 'teams', element: <TeamsList /> },
+          { path: 'teams/:teamId', element: <TeamDetail /> },
+          { path: 'team-period', element: <TeamPeriod /> },
           { path: 'stripe-ensure', element: <StripeEnsure /> },
           { path: 'team-period', element: <TeamPeriod /> },
         ],

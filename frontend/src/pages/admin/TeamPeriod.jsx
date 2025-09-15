@@ -57,3 +57,8 @@ export default function TeamPeriod() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面为旧版“团队账期”入口，已由新版团队列表/详情页替代：
+// - 列表：/admin/teams
+// - 详情：/admin/teams/:teamId（账期 Tab）
+// 保留以便过渡，建议优先在新版页面查看账期报告。

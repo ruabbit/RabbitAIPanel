@@ -396,6 +396,24 @@ export async function getTeamPeriod({ teamId, dateFrom, dateTo, model, success, 
   return format === 'csv' ? res.text() : res.json()
 }
 
+// ===== Teams
+export async function listTeams({ q, organizationId, limit = 20, offset = 0 } = {}) {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (organizationId) params.set('organization_id', organizationId)
+  params.set('limit', String(limit))
+  params.set('offset', String(offset))
+  const res = await fetch(`${apiBase()}/v1/teams?${params.toString()}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getTeam(teamId) {
+  const res = await fetch(`${apiBase()}/v1/teams/${encodeURIComponent(teamId)}`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 // ===== Dev helpers
 export async function devSeedUsage({ userId, count = 10, minTokens = 100, maxTokens = 2000, model }) {
   const body = { user_id: userId, count, min_tokens: minTokens, max_tokens: maxTokens }
