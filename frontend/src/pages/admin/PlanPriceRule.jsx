@@ -51,3 +51,6 @@ export default function PlanPriceRule() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面属于旧版“计划-计价规则”入口，已由新版计划详情页的 Pricing 选项卡替代（/admin/plans/:planId）。
+// 该文件仅在过渡期间保留以便回退，请优先在新版页面操作。

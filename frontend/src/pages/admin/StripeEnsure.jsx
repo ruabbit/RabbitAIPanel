@@ -48,3 +48,6 @@ export default function StripeEnsure() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面属于旧版“Stripe Ensure”入口，已由新版计划详情页的 Danger 选项卡整合（/admin/plans/:planId）。
+// 该文件仅在过渡期间保留以便回退，请优先在新版页面操作。

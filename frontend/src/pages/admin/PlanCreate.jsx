@@ -64,3 +64,6 @@ export default function PlanCreate() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面属于旧版“计划-创建”入口，已由新版“计划列表/详情页（/admin/plans 与 /admin/plans/:planId）”的流程替代。
+// 该文件仅在过渡期间保留以便回退，请优先使用新版页面完成计划的创建与后续配置。

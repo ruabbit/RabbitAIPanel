@@ -33,3 +33,6 @@ export default function PlanDetail() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面属于旧版“计划-详情（仅查询）”入口，已由新版计划详情页（带 Tabs，/admin/plans/:planId）替代。
+// 该文件仅在过渡期间保留以便回退，请优先在新版页面查看与操作。
