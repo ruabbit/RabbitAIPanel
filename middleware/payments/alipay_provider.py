@@ -6,19 +6,20 @@ from typing import Optional
 from .provider import PaymentProvider
 from .types import InitResult, PaymentEvent, RefundResult, PaymentStatus
 from ..config import settings
+from ..runtime_config import get as rc_get
 
 
 class AlipayProvider:
     name = "alipay"
 
     def __init__(self) -> None:
-        self.app_id: Optional[str] = settings.ALIPAY_APP_ID
-        self.app_private_key: Optional[str] = settings.ALIPAY_APP_PRIVATE_KEY
-        self.alipay_public_key: Optional[str] = settings.ALIPAY_PUBLIC_KEY
+        pass
 
     def create_payment(self, order: "Order") -> InitResult:  # type: ignore[name-defined]
         # Placeholder implementation returning a redirect URL form (page.pay)
-        params = {"out_trade_no": order.order_id, "total_amount": order.amount_cents / 100.0}
+        # In real integration, use app_id/keys; here we only construct a stub URL
+        _app_id = rc_get("ALIPAY_APP_ID", str, settings.ALIPAY_APP_ID)
+        params = {"out_trade_no": order.order_id, "total_amount": order.amount_cents / 100.0, "app_id": _app_id or ""}
         url = "https://openapi.alipay.com/gateway.do?" + urllib.parse.urlencode(params)
         return InitResult(type="redirect_url", payload={"url": url})
 
@@ -44,4 +45,3 @@ class AlipayProvider:
 
 
 alipay_provider = AlipayProvider()
-

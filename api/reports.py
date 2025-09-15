@@ -14,6 +14,7 @@ from middleware.models import Usage, OverdraftAlert, Wallet, ApiKey
 from middleware.lago.service import LagoPayment
 from middleware.plans.service import utc8_day_start, get_daily_limit_status
 from middleware.config import settings
+from middleware.runtime_config import get as rc_get
 
 
 router = APIRouter(prefix="/v1/reports", tags=["reports"])
@@ -95,13 +96,13 @@ def budget_report(
 
     # System policy snapshot
     gating = {
-        "enabled": bool(settings.OVERDRAFT_GATING_ENABLED),
-        "mode": settings.OVERDRAFT_GATING_MODE,
+        "enabled": bool(rc_get("OVERDRAFT_GATING_ENABLED", bool, settings.OVERDRAFT_GATING_ENABLED)),
+        "mode": rc_get("OVERDRAFT_GATING_MODE", str, settings.OVERDRAFT_GATING_MODE),
     }
     litellm = {
-        "configured": bool(settings.LITELLM_BASE_URL and settings.LITELLM_MASTER_KEY),
-        "sync_enabled": bool(settings.LITELLM_SYNC_ENABLED),
-        "currency": settings.LITELLM_SYNC_CURRENCY,
+        "configured": bool(rc_get("LITELLM_BASE_URL", str, settings.LITELLM_BASE_URL) and rc_get("LITELLM_MASTER_KEY", str, settings.LITELLM_MASTER_KEY)),
+        "sync_enabled": bool(rc_get("LITELLM_SYNC_ENABLED", bool, settings.LITELLM_SYNC_ENABLED)),
+        "currency": rc_get("LITELLM_SYNC_CURRENCY", str, settings.LITELLM_SYNC_CURRENCY),
     }
 
     data = {

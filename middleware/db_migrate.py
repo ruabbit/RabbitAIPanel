@@ -5,7 +5,7 @@ from sqlalchemy import text
 from .db import engine, SessionLocal
 
 
-TARGET_DB_LAYER = 2  # increment when adding new migrations
+TARGET_DB_LAYER = 3  # increment when adding new migrations
 
 
 def _get_current_layer(session) -> int:
@@ -65,6 +65,20 @@ def run_migrations() -> int:
             _set_layer(s, 2)
             cur = 2
 
+        # layer 3: identity_links table for external identity mapping
+        if cur < 3:
+            s.execute(text(
+                "CREATE TABLE IF NOT EXISTS identity_links (\n"
+                "  id INTEGER PRIMARY KEY,\n"
+                "  provider TEXT NOT NULL,\n"
+                "  external_user_id TEXT NOT NULL,\n"
+                "  user_id INTEGER NOT NULL,\n"
+                "  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n"
+                "  UNIQUE(provider, external_user_id)\n"
+                ")"
+            ))
+            _set_layer(s, 3)
+            cur = 3
+
         s.commit()
         return cur
-

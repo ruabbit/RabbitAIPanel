@@ -19,6 +19,7 @@ import Wallets from './pages/user/Wallets'
 import Ledger from './pages/user/Ledger'
 import Proxy from './pages/user/Proxy'
 import Health from './pages/Health'
+import Settings from './pages/Settings'
 
 // admin pages with sidebar
 import AdminLayout from './pages/admin/AdminLayout'
@@ -44,6 +45,7 @@ import StripeEnsure from './pages/admin/StripeEnsure'
 import TeamPeriod from './pages/admin/TeamPeriod'
 import TeamsList from './pages/admin/teams/TeamsList'
 import TeamDetail from './pages/admin/teams/TeamDetail'
+import AdminSettings from './pages/admin/Settings'
 
 const router = createBrowserRouter([
   {
@@ -98,12 +100,14 @@ const router = createBrowserRouter([
           { path: 'team-period', element: <TeamPeriod /> },
           { path: 'stripe-ensure', element: <StripeEnsure /> },
           { path: 'team-period', element: <TeamPeriod /> },
+          { path: 'settings', element: <AdminSettings /> },
         ],
       },
     ],
   },
       { path: '/auth/callback', element: <AuthCallback /> },
   { path: '/health', element: <Health /> },
+  { path: '/settings', element: <Settings /> },
 ])
 
 createRoot(document.getElementById('root')).render(

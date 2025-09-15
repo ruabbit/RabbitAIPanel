@@ -26,7 +26,12 @@ export default function TeamsList() {
       const list = res?.teams || []
       setItems(Array.isArray(list) ? list : [])
       setTotal(Number(res?.total || (Array.isArray(list) ? list.length : 0)))
-    } catch (e) { setErr(String(e)) } finally { setLoading(false) }
+    } catch (e) {
+      const msg = String(e || '')
+      // 若后端未加载 teams 路由或无结果误返回 404，则作为空列表处理
+      if (msg.includes('Not Found')) { setItems([]); setTotal(0); setErr('') }
+      else { setErr(msg) }
+    } finally { setLoading(false) }
   }
 
   useEffect(()=>{ load() }, [])
@@ -103,4 +108,3 @@ export default function TeamsList() {
     </Container>
   )
 }
-

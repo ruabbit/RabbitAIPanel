@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from .deps import dev_auth, request_context
 from middleware.config import settings
+from middleware.runtime_config import get as rc_get
 from middleware.integrations.logto_mgmt import (
     create_temp_user,
     bind_social_identity,
@@ -32,15 +33,15 @@ _social_states: dict[str, dict] = {}
 def _resolve_connector(provider: str) -> Optional[str]:
     p = provider.lower()
     mapping = {
-        "google": settings.CONNECTOR_GOOGLE_ID,
-        "github": settings.CONNECTOR_GITHUB_ID,
+        "google": rc_get("CONNECTOR_GOOGLE_ID", str, settings.CONNECTOR_GOOGLE_ID),
+        "github": rc_get("CONNECTOR_GITHUB_ID", str, settings.CONNECTOR_GITHUB_ID),
     }
     return mapping.get(p)
 
 
 @router.post("/social/start")
 def social_start(provider: str = Query(..., description="google|github"), ctx: dict = Depends(dev_auth)):
-    if not settings.LOGTO_ENDPOINT or not settings.LOGTO_CLIENT_ID or not settings.LOGTO_REDIRECT_URI:
+    if not rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or not rc_get("LOGTO_CLIENT_ID", str, settings.LOGTO_CLIENT_ID) or not rc_get("LOGTO_REDIRECT_URI", str, settings.LOGTO_REDIRECT_URI):
         raise HTTPException(status_code=500, detail="logto not configured")
 
     # 1) create temp_ user via management api
@@ -62,9 +63,9 @@ def social_start(provider: str = Query(..., description="google|github"), ctx: d
     }
 
     # 3) redirect to Logto OIDC authorize (generic). In real use, you can refine to open provider directly.
-    endpoint = settings.LOGTO_ENDPOINT.rstrip("/")
-    client_id = settings.LOGTO_CLIENT_ID
-    redirect_uri = settings.LOGTO_REDIRECT_URI
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
+    client_id = rc_get("LOGTO_CLIENT_ID", str, settings.LOGTO_CLIENT_ID)
+    redirect_uri = rc_get("LOGTO_REDIRECT_URI", str, settings.LOGTO_REDIRECT_URI)
     scope = urllib.parse.quote("openid profile email offline_access")
     auth_url = f"{endpoint}/oidc/auth?client_id={urllib.parse.quote(client_id)}&response_type=code&redirect_uri={urllib.parse.quote(redirect_uri)}&scope={scope}&state={state}"
 
@@ -182,7 +183,7 @@ class SyncProfileBody(BaseModel):
 
 @router.post("/sync_profile")
 def sync_profile(body: SyncProfileBody, ctx: dict = Depends(dev_auth)):
-    if not settings.LOGTO_ENDPOINT:
+    if not rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT):
         raise HTTPException(status_code=500, detail="logto not configured")
     # pull userinfo from access token
     try:

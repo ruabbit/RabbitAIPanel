@@ -67,7 +67,7 @@ export default function InvoicesList() {
                     <thead>
                       <tr>
                         <th scope="col">id</th>
-                        <th scope="col">customer_id</th>
+                        <th scope="col">customer</th>
                         <th scope="col">period</th>
                         <th scope="col">total_amount_cents</th>
                         <th scope="col">status</th>
@@ -82,7 +82,10 @@ export default function InvoicesList() {
                       {items.map((inv, i) => (
                         <tr key={inv.id || i} className="cursor-pointer hover:bg-gray-50" onClick={()=> inv.id && navigate(`/admin/invoices/${encodeURIComponent(inv.id)}`)}>
                           <td>{inv.id}</td>
-                          <td>{inv.customer_id}</td>
+                          <td>
+                            <div className="text-sm">{inv.customer_name || '-'}</div>
+                            <div className="text-xs text-gray-500">{inv.customer_email || '-'}</div>
+                          </td>
                           <td>{inv.period_start?.slice(0,10)} ~ {inv.period_end?.slice(0,10)}</td>
                           <td>{inv.total_amount_cents}</td>
                           <td>{inv.status}</td>
@@ -109,4 +112,3 @@ export default function InvoicesList() {
     </Container>
   )
 }
-

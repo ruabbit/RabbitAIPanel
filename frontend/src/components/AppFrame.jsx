@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { FiMenu, FiBell, FiHome, FiUsers, FiFolder, FiCalendar, FiFileText, FiPieChart, FiSettings, FiChevronDown, FiX, FiLogIn } from 'react-icons/fi'
 import DevSettingsModal from './DevSettingsModal'
-import { startSocialLogin, currentApiBase } from '../utils/api'
+import { startSocialLogin, currentApiBase, getMe, listCustomers } from '../utils/api'
 import { isDebug, isLogged } from '../utils/dev'
 
 function navIcon(name) {
@@ -18,7 +18,7 @@ function navIcon(name) {
   }
 }
 
-export default function AppFrame({ title = '', items = [], children }) {
+export default function AppFrame({ title = '', items = [], children, settingsTo: settingsToProp }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [devOpen, setDevOpen] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -26,6 +26,53 @@ export default function AppFrame({ title = '', items = [], children }) {
   const base = currentApiBase()
   const debug = isDebug()
   const logged = isLogged()
+  const [me, setMe] = useState({ name: '' })
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const r = await getMe()
+        if (!mounted) return
+        const baseMe = r.me || { name: '' }
+        // Fallback in Debug: if name missing, try query by local dev_user_id and then latest user customer
+        if ((!baseMe?.name || baseMe.name === '') && debug) {
+          try {
+            const uid = localStorage.getItem('dev_user_id')
+            if (uid) {
+              const resp = await listCustomers({ entityType: 'user', entityId: uid, limit: 1, offset: 0 })
+              const c = (resp.customers || [])[0]
+              if (c) {
+                setMe({ name: c.name || '', email: c.email || '' })
+                return
+              }
+            }
+            // fallback to latest user customer
+            const any = await listCustomers({ entityType: 'user', limit: 1, offset: 0 })
+            const c2 = (any.customers || [])[0]
+            if (c2) {
+              setMe({ name: c2.name || '', email: c2.email || '' })
+              // set dev_user_id for subsequent requests
+              try { localStorage.setItem('dev_user_id', String(c2.entity_id)) } catch {}
+              return
+            }
+          } catch {}
+        }
+        setMe(baseMe)
+      } catch (e) {
+        const msg = String(e?.message || e || '')
+        if (msg.includes('not_logged_in')) {
+          window.location.href = '/'
+          return
+        }
+        // ignore other errors
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  const settingsTo = settingsToProp || (location.pathname.startsWith('/admin') ? '/admin/settings' : '/settings')
 
   const Sidebar = (
     <div className="relative flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4 ring-1 ring-white/10">
@@ -55,7 +102,7 @@ export default function AppFrame({ title = '', items = [], children }) {
             </ul>
           </li>
           <li className="mt-auto">
-            <Link to="#" className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white">
+            <Link to={settingsTo} className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white" onClick={() => setSidebarOpen(false)}>
               <FiSettings className="size-5 shrink-0" />
               设置
             </Link>
@@ -125,9 +172,23 @@ export default function AppFrame({ title = '', items = [], children }) {
               <button type="button" className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500" aria-label="Notifications">
                 <FiBell className="size-5" />
               </button>
-              <div className="hidden lg:flex items-center text-sm text-gray-700">
-                <span className="font-medium">你</span>
-                <FiChevronDown className="ml-2 size-4 text-gray-400" />
+              <div className="hidden lg:flex relative items-center text-sm text-gray-700">
+                <button className="inline-flex items-center" onClick={()=> setUserMenuOpen(v=>!v)}>
+                  <span className="font-medium">{me?.name || '你'}</span>
+                  <FiChevronDown className="ml-2 size-4 text-gray-400" />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded shadow z-50">
+                    <Link to="/settings" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=> setUserMenuOpen(false)}>设置</Link>
+                    <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=>{
+                      try {
+                        // best-effort logout in debug: clear dev_user_id
+                        localStorage.removeItem('dev_user_id')
+                      } catch {}
+                      window.location.href = '/'
+                    }}>退出</button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

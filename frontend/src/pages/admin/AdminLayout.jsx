@@ -10,6 +10,6 @@ export default function AdminLayout({ children }) {
     { label: '团队', to: '/admin/teams', icon: 'users' },
   ]
   return (
-    <AppFrame title="管理后台" items={items}>{children}</AppFrame>
+    <AppFrame title="管理后台" items={items} settingsTo="/admin/settings">{children}</AppFrame>
   )
 }

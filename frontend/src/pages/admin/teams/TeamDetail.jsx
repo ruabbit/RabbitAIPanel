@@ -23,7 +23,12 @@ export default function TeamDetail() {
     try {
       const r = await getTeam(teamId)
       setTeam(r.team || null)
-    } catch (e) { setMsg(String(e)) }
+    } catch (e) {
+      const msg = String(e || '')
+      // 团队不存在时不报错，仅显示“未加载/未找到”
+      if (msg.includes('Not Found')) { setTeam(null); setMsg('') }
+      else { setMsg(msg) }
+    }
   }
 
   useEffect(()=>{ if (teamId) load() }, [teamId])
@@ -88,4 +93,3 @@ function TabPeriod({ teamId }) {
     </Card>
   )
 }
-

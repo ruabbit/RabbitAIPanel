@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from .deps import dev_auth
 from middleware.billing.service import create_customer, create_subscription, generate_invoice
 from middleware.billing.service import ensure_stripe_customer, ensure_stripe_subscription, push_invoice_to_stripe
-from middleware.billing.service import get_invoice, list_invoices
+from middleware.billing.service import get_invoice, list_invoices, list_invoices_with_customer
 from middleware.billing.service import (
     get_subscription,
     get_subscription_by_stripe_id,
@@ -193,20 +193,23 @@ def api_list_invoices(
     ctx: dict = Depends(dev_auth),
 ):
     try:
-        rows, total = list_invoices(customer_id=customer_id, status=status, limit=limit, offset=offset)
+        rows, total = list_invoices_with_customer(customer_id=customer_id, status=status, limit=limit, offset=offset)
         return {
             "request_id": ctx.get("request_id"),
             "total": total,
             "invoices": [
                 {
-                    "id": inv.id,
-                    "customer_id": inv.customer_id,
-                    "period_start": inv.period_start.isoformat(),
-                    "period_end": inv.period_end.isoformat(),
-                    "total_amount_cents": inv.total_amount_cents,
-                    "currency": inv.currency,
-                    "status": inv.status,
-                    "stripe_invoice_id": inv.stripe_invoice_id,
+                    "id": inv["id"],
+                    "customer_id": inv["customer_id"],
+                    "period_start": inv["period_start"].isoformat() if inv.get("period_start") else None,
+                    "period_end": inv["period_end"].isoformat() if inv.get("period_end") else None,
+                    "total_amount_cents": inv["total_amount_cents"],
+                    "currency": inv["currency"],
+                    "status": inv["status"],
+                    "stripe_invoice_id": inv["stripe_invoice_id"],
+                    "created_at": inv["created_at"].isoformat() if inv.get("created_at") else None,
+                    "customer_name": inv.get("customer_name"),
+                    "customer_email": inv.get("customer_email"),
                 }
                 for inv in rows
             ],

@@ -433,6 +433,22 @@ export async function getTeam(teamId) {
   return res.json()
 }
 
+// ===== Me (current user)
+export async function getMe() {
+  const res = await fetch(`${apiBase()}/v1/me`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function updateMe({ name, email }) {
+  const body = {}
+  if (name !== undefined) body.name = name
+  if (email !== undefined) body.email = email
+  const res = await fetch(`${apiBase()}/v1/me`, { method: 'PATCH', headers: headers(), body: JSON.stringify(body) })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 // ===== Dev helpers
 export async function devSeedUsage({ userId, count = 10, minTokens = 100, maxTokens = 2000, model }) {
   const body = { user_id: userId, count, min_tokens: minTokens, max_tokens: maxTokens }
@@ -440,6 +456,45 @@ export async function devSeedUsage({ userId, count = 10, minTokens = 100, maxTok
   const res = await fetch(`${apiBase()}/v1/dev/seed/usage`, {
     method: 'POST', headers: headers(), body: JSON.stringify(body)
   })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+// ===== System settings (Admin)
+export async function getSystemSettings() {
+  const res = await fetch(`${apiBase()}/v1/settings`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function updateSystemSettings(values = {}) {
+  const res = await fetch(`${apiBase()}/v1/settings`, {
+    method: 'PATCH', headers: headers(), body: JSON.stringify({ values })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getSystemSettingsKeys() {
+  const res = await fetch(`${apiBase()}/v1/settings/keys`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function testStripeConnection() {
+  const res = await fetch(`${apiBase()}/v1/settings/test/stripe`, { method: 'POST', headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function testLagoConnection() {
+  const res = await fetch(`${apiBase()}/v1/settings/test/lago`, { method: 'POST', headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function testLiteLLMConnection() {
+  const res = await fetch(`${apiBase()}/v1/settings/test/litellm`, { method: 'POST', headers: headers() })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }

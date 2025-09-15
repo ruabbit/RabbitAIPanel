@@ -19,6 +19,7 @@ from middleware.db_migrate import run_migrations
 from middleware.payments.service import create_checkout, process_webhook, refund_payment, get_payment_status
 from middleware.billing.service import process_stripe_invoice_webhook, process_stripe_subscription_webhook
 from middleware.config import settings
+from middleware.runtime_config import get as rc_get
 from .deps import dev_auth, request_context
 from .wallets import router as wallets_router
 from .plans import router as plans_router
@@ -29,6 +30,8 @@ from .billing import router as billing_router
 from .dev import router as dev_router
 from .teams import router as teams_router
 from .auth import router as auth_router
+from .users import router as users_router
+from .settings import router as settings_router
 from middleware.integrations.litellm_sync import sync_wallets_to_litellm
 from middleware.billing.service import process_outbox_once
 
@@ -50,9 +53,9 @@ def on_startup() -> None:
     # Setup logging baseline
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     # Periodic LiteLLM budget sync
-    if settings.LITELLM_SYNC_ENABLED:
-        interval = max(60, int(settings.LITELLM_SYNC_INTERVAL_SEC))
-        currency = settings.LITELLM_SYNC_CURRENCY
+    if rc_get("LITELLM_SYNC_ENABLED", bool, settings.LITELLM_SYNC_ENABLED):
+        interval = max(60, int(rc_get("LITELLM_SYNC_INTERVAL_SEC", int, settings.LITELLM_SYNC_INTERVAL_SEC)))
+        currency = rc_get("LITELLM_SYNC_CURRENCY", str, settings.LITELLM_SYNC_CURRENCY)
 
         async def _runner():
             await asyncio.sleep(2)
@@ -103,15 +106,15 @@ async def _logging_and_ratelimit(request: Request, call_next):
     rid = request.headers.get("x-request-id") or str(uuid.uuid4())
 
     # rate limit
-    if settings.RATE_LIMIT_ENABLED:
+    if rc_get("RATE_LIMIT_ENABLED", bool, settings.RATE_LIMIT_ENABLED):
         p = request.url.path
         if p.startswith("/v1/webhooks/"):
             # do not rate-limit webhooks
             pass
         else:
-            ident = request.headers.get("x-api-key") or request.client.host or "unknown"
-            window = max(1, int(settings.RATE_LIMIT_WINDOW_SEC))
-            limit = max(1, int(settings.RATE_LIMIT_MAX_REQUESTS))
+            ident = request.headers.get("x-api-key") or (request.client.host if request.client else "unknown") or "unknown"
+            window = max(1, int(rc_get("RATE_LIMIT_WINDOW_SEC", int, settings.RATE_LIMIT_WINDOW_SEC)))
+            limit = max(1, int(rc_get("RATE_LIMIT_MAX_REQUESTS", int, settings.RATE_LIMIT_MAX_REQUESTS)))
             now = time.time()
             bucket = _rate_buckets.get(ident) or []
             # drop outdated timestamps
@@ -376,12 +379,15 @@ app.include_router(reports_router)
 app.include_router(billing_router)
 app.include_router(dev_router)
 app.include_router(teams_router)
+app.include_router(users_router)
 app.include_router(auth_router)
+app.include_router(settings_router)
 
 
 # Simple config endpoint to retrieve Stripe publishable key for frontend
 @app.get("/v1/config/stripe")
 def get_stripe_config(ctx: dict = Depends(request_context)):
-    if not settings.STRIPE_PUBLISHABLE_KEY:
+    pk = rc_get("STRIPE_PUBLISHABLE_KEY", str, settings.STRIPE_PUBLISHABLE_KEY)
+    if not pk:
         raise HTTPException(status_code=404, detail="stripe publishable key not configured")
-    return {"publishable_key": settings.STRIPE_PUBLISHABLE_KEY, "request_id": ctx.get("request_id")}
+    return {"publishable_key": pk, "request_id": ctx.get("request_id")}

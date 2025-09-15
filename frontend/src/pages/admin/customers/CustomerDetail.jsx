@@ -100,6 +100,8 @@ function TabSubscriptions({ customerId }) {
   const [err, setErr] = useState('')
 
   const [planId, setPlanId] = useState('')
+  const [planQ, setPlanQ] = useState('')
+  const [planOptions, setPlanOptions] = useState([])
   const [msg, setMsg] = useState('')
 
   // debug seed
@@ -143,7 +145,7 @@ function TabSubscriptions({ customerId }) {
     setMsg('')
     try {
       if (!customerId) throw new Error('customer_id 为空')
-      if (!planId) throw new Error('plan_id 为空')
+      if (!planId) throw new Error('plan 为空，请先搜索并选择')
       await createSubscription({ customerId, planId: Number(planId) })
       setMsg('订阅已创建'); setPlanId('')
       await load({ offset: 0 })
@@ -153,13 +155,20 @@ function TabSubscriptions({ customerId }) {
   return (
     <Card>
       <div className="font-semibold mb-2">订阅</div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-        <div>
-          <label className="rr-label" htmlFor="cs-plan">plan_id</label>
-          <input id="cs-plan" className="rr-input" value={planId} onChange={e=>setPlanId(e.target.value)} placeholder="plan_id" />
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+        <div className="md:col-span-2">
+          <label className="rr-label" htmlFor="cs-plan-q">搜索计划</label>
+          <input id="cs-plan-q" className="rr-input" value={planQ} onChange={e=>setPlanQ(e.target.value)} placeholder="按计划名称搜索" />
         </div>
         <div className="flex items-end">
-          <Button onClick={onCreate} color="blue">创建订阅</Button>
+          <Button variant="outline" onClick={async ()=>{ try { setMsg(''); const r = await import('../../../utils/api'); const api = r; const res = await api.listPlans({ q: planQ, status: 'active', limit: 20, offset: 0 }); const list = res?.plans || []; setPlanOptions(list.map(p=>({ value: String(p.id), label: `${p.id} - ${p.name}` }))) } catch(e){ setMsg(String(e)) } }} className="w-full">搜索计划</Button>
+        </div>
+        <div>
+          <label className="rr-label" htmlFor="cs-plan">选择计划</label>
+          <Select id="cs-plan" value={planId} onChange={v=>setPlanId(String(v))} options={planOptions} placeholder="先搜索再选择" />
+        </div>
+        <div className="flex items-end">
+          <Button onClick={onCreate} color="blue" className="w-full">创建订阅</Button>
         </div>
       </div>
       {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}

@@ -6,14 +6,14 @@ from typing import Optional
 from .provider import PaymentProvider
 from .types import InitResult, PaymentEvent, RefundResult, PaymentStatus
 from ..config import settings
+from ..runtime_config import get as rc_get
 
 
 class StripeProvider:
     name = "stripe"
 
     def __init__(self) -> None:
-        self.secret_key: Optional[str] = settings.STRIPE_SECRET_KEY
-        self.webhook_secret: Optional[str] = settings.STRIPE_WEBHOOK_SECRET
+        pass
 
     def create_payment(self, order: "Order") -> InitResult:  # type: ignore[name-defined]
         # Create a PaymentIntent and return client_secret for Payment Element
@@ -22,9 +22,10 @@ class StripeProvider:
         except Exception as e:  # pragma: no cover - runtime import
             raise RuntimeError("stripe library not installed") from e
 
-        if not self.secret_key:
+        secret_key = rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY)
+        if not secret_key:
             raise RuntimeError("STRIPE_SECRET_KEY not configured")
-        stripe.api_key = self.secret_key
+        stripe.api_key = secret_key
 
         params = {
             "amount": int(order.amount_cents),
@@ -51,12 +52,13 @@ class StripeProvider:
             raise RuntimeError("stripe library not installed") from e
 
         data: dict
-        if self.webhook_secret:
+        webhook_secret = rc_get("STRIPE_WEBHOOK_SECRET", str, settings.STRIPE_WEBHOOK_SECRET)
+        if webhook_secret:
             sig = headers.get("stripe-signature") or headers.get("Stripe-Signature")
             if not sig:
                 raise RuntimeError("Missing Stripe-Signature header")
             event = stripe.Webhook.construct_event(
-                payload=body.decode("utf-8"), sig_header=sig, secret=self.webhook_secret
+                payload=body.decode("utf-8"), sig_header=sig, secret=webhook_secret
             )
             data = event
             obj = event["data"]["object"]
@@ -92,9 +94,10 @@ class StripeProvider:
             import stripe  # type: ignore
         except Exception as e:  # pragma: no cover
             return RefundResult(ok=False, error="stripe library not installed")
-        if not self.secret_key:
+        secret_key = rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY)
+        if not secret_key:
             return RefundResult(ok=False, error="STRIPE_SECRET_KEY not configured")
-        stripe.api_key = self.secret_key
+        stripe.api_key = secret_key
         try:
             kwargs = {"payment_intent": provider_txn_id}
             if amount_cents:
@@ -111,9 +114,10 @@ class StripeProvider:
             import stripe  # type: ignore
         except Exception as e:  # pragma: no cover
             return PaymentStatus(status="created", amount_cents=0, currency="USD", provider_txn_id=provider_txn_id)
-        if not self.secret_key:
+        secret_key = rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY)
+        if not secret_key:
             return PaymentStatus(status="created", amount_cents=0, currency="USD", provider_txn_id=provider_txn_id)
-        stripe.api_key = self.secret_key
+        stripe.api_key = secret_key
         pi = stripe.PaymentIntent.retrieve(provider_txn_id)
         status_map = {
             "succeeded": "succeeded",

@@ -69,6 +69,14 @@ class ApiKey(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
 
 
+class IdentityLink(Base):
+    __tablename__ = "identity_links"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    provider: Mapped[str] = mapped_column(String(64))  # e.g., logto
+    external_user_id: Mapped[str] = mapped_column(String(256))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
 class Wallet(Base):
     __tablename__ = "wallets"
     __table_args__ = (UniqueConstraint("user_id", "currency", name="uq_wallet_user_currency"),)

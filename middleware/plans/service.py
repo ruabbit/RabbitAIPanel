@@ -7,6 +7,7 @@ from typing import Iterator, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from ..db import SessionLocal
+from ..runtime_config import get as rc_get
 from ..models import Plan, DailyLimitPlan, UsagePlan, PriceRule, PlanAssignment, Usage, OverdraftAlert
 from sqlalchemy import func
 
@@ -200,7 +201,7 @@ def has_today_overdraft(user_id: int) -> bool:
 
 def _parse_degrade_mapping() -> list[tuple[str, str]]:
     mapping: list[tuple[str, str]] = []
-    raw = settings.DEGRADE_MAPPING.strip()
+    raw = (rc_get("DEGRADE_MAPPING", str, "") or "").strip()
     if not raw:
         return mapping
     parts = [p.strip() for p in raw.split(",") if p.strip()]
@@ -217,7 +218,7 @@ def get_degrade_fallback(model: str) -> str:
     for pat, fb in _parse_degrade_mapping():
         if _match_pattern(model, pat):
             return fb
-    return settings.DEGRADE_DEFAULT_MODEL
+    return rc_get("DEGRADE_DEFAULT_MODEL", str, "gpt-4o-mini")
 
 
 def _today_spend_cents(session: Session, user_id: int, *, reset_time: str = "00:00") -> int:

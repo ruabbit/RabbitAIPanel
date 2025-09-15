@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..db import SessionLocal
 from ..models import User, Wallet
 from ..config import settings
+from ..runtime_config import get as rc_get
 from .litellm_stub import update_budget_for_user
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def _sync_user_wallet_to_litellm(session: Session, user: User, currency: str = "
     update_budget_for_user(
         litellm_user_id=user.litellm_user_id,
         max_budget_cents=max_budget_cents,
-        budget_duration=settings.LITELLM_BUDGET_DURATION,
+        budget_duration=rc_get("LITELLM_BUDGET_DURATION", str, settings.LITELLM_BUDGET_DURATION),
     )
     logger.info(
         "litellm.sync user_id=%s litellm_user_id=%s currency=%s balance_cents=%s",
@@ -41,7 +42,7 @@ def _sync_user_wallet_to_litellm(session: Session, user: User, currency: str = "
 
 def sync_wallets_to_litellm(currency: str = "USD") -> None:
     """Best-effort periodic sync of wallet balances to LiteLLM budgets."""
-    if not settings.LITELLM_BASE_URL or not settings.LITELLM_MASTER_KEY:
+    if not rc_get("LITELLM_BASE_URL", str, settings.LITELLM_BASE_URL) or not rc_get("LITELLM_MASTER_KEY", str, settings.LITELLM_MASTER_KEY):
         logger.info("litellm.sync.skip reason=not_configured")
         return
     with SessionLocal() as s:
@@ -53,4 +54,3 @@ def sync_wallets_to_litellm(currency: str = "USD") -> None:
                 logger.warning(
                     "litellm.sync.error user_id=%s currency=%s err=%s", u.id, currency.upper(), e
                 )
-

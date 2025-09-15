@@ -51,6 +51,7 @@ export default function CustomersList() {
       }
       const res = await createCustomer({ entityType: newType, entityId: Number(eid), name: (newName||undefined), email: (newEmail||undefined), stripeCustomerId: stripeId || undefined })
       setMsg(`创建成功 customer_id=${res.customer_id}（entity_id=${eid}）`)
+      try { localStorage.setItem('dev_user_id', String(eid)) } catch {}
       setNewEntity(''); setStripeId(''); setNewName(''); setNewEmail('')
       // reload first page to include new
       setOffset(0); await load({ offset: 0 })

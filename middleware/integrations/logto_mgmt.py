@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 
 from middleware.config import settings
+from middleware.runtime_config import get as rc_get
 
 
 _mgmt_token_cache: dict[str, tuple[str, float]] = {}
@@ -43,11 +44,11 @@ def get_mgmt_access_token() -> str:
     Caches token in-memory until ~55 minutes to reduce calls.
     LOGTO_MGMT_RESOURCE is recommended (e.g. https://api.logto.app or {LOGTO_ENDPOINT}/api).
     """
-    client_id = settings.LOGTO_MGMT_CLIENT_ID or settings.LOGTO_CLIENT_ID
-    client_secret = settings.LOGTO_MGMT_CLIENT_SECRET or settings.LOGTO_CLIENT_SECRET
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    client_id = rc_get("LOGTO_MGMT_CLIENT_ID", str, settings.LOGTO_MGMT_CLIENT_ID) or rc_get("LOGTO_CLIENT_ID", str, settings.LOGTO_CLIENT_ID)
+    client_secret = rc_get("LOGTO_MGMT_CLIENT_SECRET", str, settings.LOGTO_MGMT_CLIENT_SECRET) or rc_get("LOGTO_CLIENT_SECRET", str, settings.LOGTO_CLIENT_SECRET)
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
     token_endpoint = f"{endpoint}/oidc/token"
-    resource = settings.LOGTO_MGMT_RESOURCE or (f"{endpoint}/api" if endpoint else None)
+    resource = rc_get("LOGTO_MGMT_RESOURCE", str, settings.LOGTO_MGMT_RESOURCE) or (f"{endpoint}/api" if endpoint else None)
     if not client_id or not client_secret or not endpoint or not resource:
         raise RuntimeError("logto management credentials not configured")
 
@@ -74,7 +75,7 @@ def get_mgmt_access_token() -> str:
 
 def create_temp_user(*, username_prefix: str = "temp_") -> dict[str, Any]:
     token = get_mgmt_access_token()
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
     url = f"{endpoint}/api/users"
     uname = f"{username_prefix}{uuid.uuid4().hex[:12]}"
     body = {"username": uname}
@@ -83,21 +84,21 @@ def create_temp_user(*, username_prefix: str = "temp_") -> dict[str, Any]:
 
 def get_user(user_id: str) -> dict[str, Any]:
     token = get_mgmt_access_token()
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
     url = f"{endpoint}/api/users/{urllib.parse.quote(user_id)}"
     return _req_json("GET", url, token=token)
 
 
 def update_user_username(user_id: str, *, username: str) -> dict[str, Any]:
     token = get_mgmt_access_token()
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
     url = f"{endpoint}/api/users/{urllib.parse.quote(user_id)}"
     return _req_json("PATCH", url, token=token, body={"username": username})
 
 
 def set_primary_email(user_id: str, *, email: str) -> dict[str, Any]:
     token = get_mgmt_access_token()
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
     url = f"{endpoint}/api/users/{urllib.parse.quote(user_id)}"
     return _req_json("PATCH", url, token=token, body={"primaryEmail": email})
 
@@ -131,9 +132,9 @@ def bind_social_identity(user_id: str, *, verification_record_id: str, connector
 # --- OIDC helpers for code exchange and userinfo ---
 
 def exchange_code_for_tokens(*, code: str) -> dict[str, Any]:
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
-    client_id = settings.LOGTO_CLIENT_ID
-    redirect_uri = settings.LOGTO_REDIRECT_URI
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
+    client_id = rc_get("LOGTO_CLIENT_ID", str, settings.LOGTO_CLIENT_ID)
+    redirect_uri = rc_get("LOGTO_REDIRECT_URI", str, settings.LOGTO_REDIRECT_URI)
     if not endpoint or not client_id or not redirect_uri:
         raise RuntimeError("logto oidc not configured")
     token_endpoint = f"{endpoint}/oidc/token"
@@ -143,13 +144,14 @@ def exchange_code_for_tokens(*, code: str) -> dict[str, Any]:
         "redirect_uri": redirect_uri,
         "client_id": client_id,
     }
-    if settings.LOGTO_CLIENT_SECRET:
-        form["client_secret"] = settings.LOGTO_CLIENT_SECRET
+    client_secret = rc_get("LOGTO_CLIENT_SECRET", str, settings.LOGTO_CLIENT_SECRET)
+    if client_secret:
+        form["client_secret"] = client_secret
     return _post_form(token_endpoint, form)
 
 
 def get_userinfo(*, access_token: str) -> dict[str, Any]:
-    endpoint = (settings.LOGTO_ENDPOINT or "").rstrip("/")
+    endpoint = (rc_get("LOGTO_ENDPOINT", str, settings.LOGTO_ENDPOINT) or "").rstrip("/")
     url = f"{endpoint}/oidc/me"
     # use JSON GET with bearer token
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {access_token}"})

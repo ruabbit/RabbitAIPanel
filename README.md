@@ -57,20 +57,25 @@ This milestone (M1) delivers the plugin framework and data layer.
 - The server echoes `X-Request-ID` on every response and includes it in logs.
 - Selected endpoints also include `request_id` in the JSON response (checkout, refund, status, wallets, ledger, config, healthz, webhook, root) for easier correlation.
 
-## Environment (optional integrations)
-- Lago: `LAGO_API_URL`, `LAGO_API_KEY`
-- LiteLLM: `LITELLM_BASE_URL`, `LITELLM_MASTER_KEY`, `LITELLM_BUDGET_DURATION` (e.g. `30d`)
-  - Periodic budget sync (optional):
-    - `LITELLM_SYNC_ENABLED=1` to enable wallet→LiteLLM budget periodic sync.
-    - `LITELLM_SYNC_INTERVAL_SEC` sync frequency (default 900).
-    - `LITELLM_SYNC_CURRENCY` target currency code (default `USD`).
-  - Degrade default (demo):
-    - `DEGRADE_DEFAULT_MODEL` (default `gpt-4o-mini`).
-  - Overdraft gating:
-    - `OVERDRAFT_GATING_ENABLED=1` to enable next-request strong gating after overdraft (UTC+8 day window)
-    - `OVERDRAFT_GATING_MODE=block|degrade` (default `block`)
-  - Configurable degrade mapping:
-    - `DEGRADE_MAPPING` (e.g., `gpt-4o->gpt-4o-mini,gpt-4*->gpt-4o-mini`)
+## Configuration Model
+- Source of truth:
+  - Env-only: `DATABASE_URL` (default `sqlite:///./dev.db`), `DEV_API_KEY` (dev auth).
+  - DB-first: other configs read from DB table `settings`, fallback to env when missing; set `STRICT_DB_MODE=1` (env) to disable fallback in production.
+- Runtime reload:
+  - Editing via `PATCH /v1/settings` takes effect immediately (in-process cache is cleared automatically).
+- Admin API:
+  - `GET /v1/settings`: current values (sensitive keys masked/configured only, no plaintext).
+  - `PATCH /v1/settings`: batch update (cannot modify `db_layer` or `DEV_API_KEY`).
+  - `GET /v1/settings/keys`: keys metadata (group, type, sensitive) for grouped admin UI.
+- Frontend:
+  - Admin Settings page groups keys by Payments/Lago/LiteLLM/Auth/RateLimit/Overdraft/Other; sensitive fields are marked and not echoed after save.
+  - Typical keys (non-exhaustive):
+    - Payments: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`, `ALIPAY_*`
+    - Lago: `LAGO_API_URL`, `LAGO_API_KEY`, `LAGO_EVENTS_ENABLED`, `LAGO_*_ENDPOINT`
+    - LiteLLM: `LITELLM_BASE_URL`, `LITELLM_MASTER_KEY`, `LITELLM_BUDGET_DURATION`, `LITELLM_SYNC_*`
+    - Auth/Logto: `LOGTO_*`, `CONNECTOR_GOOGLE_ID`, `CONNECTOR_GITHUB_ID`
+    - Rate limit: `RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW_SEC`, `RATE_LIMIT_MAX_REQUESTS`
+    - Overdraft/Degrade: `OVERDRAFT_GATING_*`, `DEGRADE_*`
 
 ## Logging
 - INFO-level logs around checkout, webhooks, refunds, status queries, and wallet operations.
@@ -80,8 +85,24 @@ This milestone (M1) delivers the plugin framework and data layer.
 - API draft: `docs/api.md`
 - Implementation plan: `docs/implementation_plan.md`
 - Billing & Lago integration: `docs/billing_and_lago.md`
- - Frontend header controls & debug gating: `docs/header_controls.md`
- - Deploy guide (includes frontend scripts): `docs/deploy.md`
+- Frontend header controls & debug gating: `docs/header_controls.md`
+- Deploy guide (includes frontend scripts): `docs/deploy.md`
+
+## Docker
+Build and run with Docker Compose (backend + frontend):
+
+```
+docker compose build
+docker compose up -d
+```
+
+- API: http://localhost:8000
+- Frontend: http://localhost:5173
+
+Notes
+- Default DB is SQLite at `/data/dev.db` mounted via a named volume; override with `DATABASE_URL` if you use an external DB.
+- Dev auth: set `DEV_API_KEY` (compose already sets `dev-secret` for local testing). Frontend is built with `VITE_API_BASE=http://localhost:8000`.
+- To change frontend API base for deployment, rebuild with: `docker compose build --build-arg VITE_API_BASE=https://your.api`.
 
 ## Frontend Dev Tips
 - Frontend env lives in `frontend/.env` and uses `VITE_` prefix (e.g. `VITE_API_BASE`).

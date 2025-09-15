@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from .deps import dev_auth
 from middleware.config import settings
+from middleware.runtime_config import get as rc_get
 from middleware.plans.service import estimate_cost_for_tokens, check_daily_limit, record_usage_row, get_daily_limit_status, record_overdraft_alert, has_today_overdraft, get_degrade_fallback
 from middleware.integrations.lago_stub import record_usage
 
@@ -27,7 +28,8 @@ class ChatBody(BaseModel):
 @router.post("/chat/completions")
 def proxy_chat(body: ChatBody, ctx: dict = Depends(dev_auth), x_litellm_api_key: Optional[str] = Header(default=None, alias="x-litellm-api-key")):
     # Validate config
-    if not settings.LITELLM_BASE_URL:
+    base_url = rc_get("LITELLM_BASE_URL", str, settings.LITELLM_BASE_URL)
+    if not base_url:
         raise HTTPException(status_code=503, detail="LiteLLM base URL not configured")
     if not x_litellm_api_key:
         raise HTTPException(status_code=400, detail="x-litellm-api-key header required")
@@ -41,10 +43,12 @@ def proxy_chat(body: ChatBody, ctx: dict = Depends(dev_auth), x_litellm_api_key:
 
     # Overdraft next-request strong gating (if enabled)
     selected_model = body.model
-    if settings.OVERDRAFT_GATING_ENABLED and has_today_overdraft(user_id):
-        if settings.OVERDRAFT_GATING_MODE == "block":
+    gating_enabled = rc_get("OVERDRAFT_GATING_ENABLED", bool, settings.OVERDRAFT_GATING_ENABLED)
+    gating_mode = rc_get("OVERDRAFT_GATING_MODE", str, settings.OVERDRAFT_GATING_MODE)
+    if gating_enabled and has_today_overdraft(user_id):
+        if gating_mode == "block":
             raise HTTPException(status_code=403, detail="overdraft gating active (block)")
-        elif settings.OVERDRAFT_GATING_MODE == "degrade":
+        elif gating_mode == "degrade":
             selected_model = get_degrade_fallback(body.model)
 
     # Estimate cost for gating (tokens unknown -> skip or use hints)
@@ -65,7 +69,7 @@ def proxy_chat(body: ChatBody, ctx: dict = Depends(dev_auth), x_litellm_api_key:
             selected_model = get_degrade_fallback(selected_model)
 
     # Forward request to LiteLLM
-    url = settings.LITELLM_BASE_URL.rstrip("/") + "/chat/completions"
+    url = base_url.rstrip("/") + "/chat/completions"
     data = json.dumps({"model": selected_model, "messages": body.messages}).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={
         "Content-Type": "application/json",

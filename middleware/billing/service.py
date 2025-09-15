@@ -12,6 +12,7 @@ from ..db import SessionLocal
 from ..models import Customer, Subscription, Invoice, InvoiceItem, Usage, EventOutbox, ProviderEvent, StripePriceMapping, Plan
 from ..plans.service import utc8_day_start
 from ..config import settings
+from ..runtime_config import get as rc_get
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,7 @@ def generate_invoice(*, customer_id: int, date_from: str, date_to: str) -> Invoi
 
 
 def _stripe_available() -> bool:
-    return bool(settings.STRIPE_SECRET_KEY)
+    return bool(rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY))
 
 
 def ensure_stripe_customer(customer_id: int) -> str:
@@ -143,7 +144,7 @@ def ensure_stripe_customer(customer_id: int) -> str:
         import stripe  # type: ignore
     except Exception as e:
         raise RuntimeError("stripe library not installed") from e
-    stripe.api_key = settings.STRIPE_SECRET_KEY
+    stripe.api_key = rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY)
     with session_scope() as s:
         cust = s.get(Customer, customer_id)
         if not cust:
@@ -162,7 +163,7 @@ def ensure_stripe_subscription(customer_id: int, plan_id: int, *, stripe_price_i
         import stripe  # type: ignore
     except Exception as e:
         raise RuntimeError("stripe library not installed") from e
-    stripe.api_key = settings.STRIPE_SECRET_KEY
+    stripe.api_key = rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY)
     sc_id = ensure_stripe_customer(customer_id)
     with session_scope() as s:
         sub = s.query(Subscription).filter_by(customer_id=customer_id, plan_id=plan_id, status="active").first()
@@ -191,7 +192,7 @@ def push_invoice_to_stripe(invoice_id: int) -> str:
         import stripe  # type: ignore
     except Exception as e:
         raise RuntimeError("stripe library not installed") from e
-    stripe.api_key = settings.STRIPE_SECRET_KEY
+    stripe.api_key = rc_get("STRIPE_SECRET_KEY", str, settings.STRIPE_SECRET_KEY)
     with session_scope() as s:
         inv = s.get(Invoice, invoice_id)
         if not inv:
@@ -234,12 +235,13 @@ def process_stripe_invoice_webhook(headers: dict, body: bytes, request_id: str |
         raise RuntimeError("stripe library not installed") from e
 
     # Verify and parse event
-    if settings.STRIPE_WEBHOOK_SECRET:
+    webhook_secret = rc_get("STRIPE_WEBHOOK_SECRET", str, settings.STRIPE_WEBHOOK_SECRET)
+    if webhook_secret:
         sig = headers.get("stripe-signature") or headers.get("Stripe-Signature")
         if not sig:
             raise RuntimeError("Missing Stripe-Signature header")
         event = stripe.Webhook.construct_event(
-            payload=body.decode("utf-8"), sig_header=sig, secret=settings.STRIPE_WEBHOOK_SECRET
+            payload=body.decode("utf-8"), sig_header=sig, secret=webhook_secret
         )
         data = event
         obj = event["data"]["object"]
@@ -413,6 +415,33 @@ def list_invoices(*, customer_id: Optional[int] = None, status: Optional[str] = 
         return list(rows), int(total)
 
 
+def list_invoices_with_customer(*, customer_id: Optional[int] = None, status: Optional[str] = None, limit: int = 50, offset: int = 0) -> tuple[list[dict], int]:
+    with SessionLocal() as s:
+        q = s.query(Invoice, Customer).join(Customer, Invoice.customer_id == Customer.id)
+        if customer_id is not None:
+            q = q.filter(Invoice.customer_id == customer_id)
+        if status in ("draft", "finalized", "paid", "failed"):
+            q = q.filter(Invoice.status == status)
+        total = q.count()
+        rows = q.order_by(Invoice.id.desc()).offset(offset).limit(limit).all()
+        items: list[dict] = []
+        for inv, cust in rows:
+            items.append({
+                "id": inv.id,
+                "customer_id": inv.customer_id,
+                "period_start": inv.period_start,
+                "period_end": inv.period_end,
+                "total_amount_cents": inv.total_amount_cents,
+                "currency": inv.currency,
+                "status": inv.status,
+                "stripe_invoice_id": inv.stripe_invoice_id,
+                "created_at": inv.created_at,
+                "customer_name": cust.name,
+                "customer_email": cust.email,
+            })
+        return items, int(total)
+
+
 def get_subscription(subscription_id: int) -> Subscription:
     with SessionLocal() as s:
         sub = s.get(Subscription, subscription_id)
@@ -496,12 +525,13 @@ def process_stripe_subscription_webhook(headers: dict, body: bytes, request_id: 
         raise RuntimeError("stripe library not installed") from e
 
     # 解析/验签
-    if settings.STRIPE_WEBHOOK_SECRET:
+    webhook_secret2 = rc_get("STRIPE_WEBHOOK_SECRET", str, settings.STRIPE_WEBHOOK_SECRET)
+    if webhook_secret2:
         sig = headers.get("stripe-signature") or headers.get("Stripe-Signature")
         if not sig:
             raise RuntimeError("Missing Stripe-Signature header")
         event = stripe.Webhook.construct_event(
-            payload=body.decode("utf-8"), sig_header=sig, secret=settings.STRIPE_WEBHOOK_SECRET
+            payload=body.decode("utf-8"), sig_header=sig, secret=webhook_secret2
         )
         data = event
         obj = event["data"]["object"]
