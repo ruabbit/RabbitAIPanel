@@ -99,3 +99,8 @@ export default function Invoices() {
     </Container>
   )
 }
+// 弃用说明：
+// 本页面为旧版“发票”入口，已由新版发票列表/详情页替代：
+// - 列表：/admin/invoices
+// - 详情：/admin/invoices/:invoiceId
+// 保留以便过渡，建议优先在新版页面管理发票。

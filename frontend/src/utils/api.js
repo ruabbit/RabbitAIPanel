@@ -86,9 +86,10 @@ export async function getPeriod({ userId, dateFrom, dateTo, model, success, grou
 }
 
 // ===== Admin (Billing)
-export async function listInvoices({ customerId, limit = 50, offset = 0 }) {
+export async function listInvoices({ customerId, status, limit = 50, offset = 0 }) {
   const params = new URLSearchParams()
   if (customerId) params.set('customer_id', customerId)
+  if (status && status !== 'all') params.set('status', status)
   params.set('limit', String(limit))
   params.set('offset', String(offset))
   const res = await fetch(`${apiBase()}/v1/billing/invoices?${params.toString()}`, { headers: headers() })

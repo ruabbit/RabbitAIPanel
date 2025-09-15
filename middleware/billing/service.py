@@ -364,11 +364,13 @@ def get_invoice(invoice_id: int) -> tuple[Invoice, list[InvoiceItem]]:
         return inv, list(items)
 
 
-def list_invoices(*, customer_id: Optional[int] = None, limit: int = 50, offset: int = 0) -> tuple[list[Invoice], int]:
+def list_invoices(*, customer_id: Optional[int] = None, status: Optional[str] = None, limit: int = 50, offset: int = 0) -> tuple[list[Invoice], int]:
     with SessionLocal() as s:
         q = s.query(Invoice)
         if customer_id is not None:
             q = q.filter(Invoice.customer_id == customer_id)
+        if status in ("draft", "finalized", "paid", "failed"):
+            q = q.filter(Invoice.status == status)
         total = q.count()
         rows = q.order_by(Invoice.id.desc()).offset(offset).limit(limit).all()
         return list(rows), int(total)

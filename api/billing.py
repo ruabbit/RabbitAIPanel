@@ -132,12 +132,13 @@ def api_get_invoice(invoice_id: int, ctx: dict = Depends(dev_auth)):
 @router.get("/invoices")
 def api_list_invoices(
     customer_id: int | None = Query(None),
+    status: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     ctx: dict = Depends(dev_auth),
 ):
     try:
-        rows, total = list_invoices(customer_id=customer_id, limit=limit, offset=offset)
+        rows, total = list_invoices(customer_id=customer_id, status=status, limit=limit, offset=offset)
         return {
             "request_id": ctx.get("request_id"),
             "total": total,
