@@ -12,7 +12,7 @@ import {
   pushInvoiceToStripe,
   ensureStripeCustomer,
 } from '../../../utils/api'
-import { devSeedUsage } from '../../../utils/api'
+import { devSeedUsage, getDailyReport, getSummaryReport } from '../../../utils/api'
 import { isDebug, currentUserId } from '../../../utils/dev'
 
 function TabButton({ active, onClick, children }) {
@@ -71,6 +71,23 @@ function TabSubscriptions({ customerId }) {
   const [seedMin, setSeedMin] = useState('100')
   const [seedMax, setSeedMax] = useState('2000')
   const [seedModel, setSeedModel] = useState('')
+  const [dailySnap, setDailySnap] = useState(null)
+  const [summarySnap, setSummarySnap] = useState(null)
+
+  const loadSnapshot = async (uid) => {
+    try {
+      const today = new Date().toISOString().slice(0,10)
+      const sumDays = 7
+      const [d, s] = await Promise.all([
+        getDailyReport({ userId: uid, date: today }),
+        getSummaryReport({ userId: uid, days: sumDays }),
+      ])
+      setDailySnap(d)
+      setSummarySnap(s)
+    } catch (e) {
+      // best-effort; keep silent in UI
+    }
+  }
 
   const load = async (opts={}) => {
     if (!customerId) return
@@ -176,11 +193,35 @@ function TabSubscriptions({ customerId }) {
                   setMsg('')
                   const r = await devSeedUsage({ userId: Number(seedUserId), count: Number(seedCount||'10'), minTokens: Number(seedMin||'100'), maxTokens: Number(seedMax||'2000'), model: seedModel || undefined })
                   setMsg(`已生成 ${r.created} 条用量假数据`)
+                  await loadSnapshot(Number(seedUserId))
                 } catch (e) { setMsg(String(e)) }
               }}>生成用量假数据</Button>
             </div>
           </div>
           <div className="mt-2 text-xs text-gray-500">提示：若用户未分配计划或未配置价格规则，系统将为部分记录使用最小随机费用。</div>
+
+          {(dailySnap || summarySnap) && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-sm text-gray-800">用量快照（用户 {seedUserId}）</div>
+                <Button variant="outline" onClick={()=> loadSnapshot(Number(seedUserId))}>刷新快照</Button>
+              </div>
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Card>
+                  <div className="font-semibold mb-1">今日汇总</div>
+                  {dailySnap ? (
+                    <div className="text-sm text-gray-700">金额：{dailySnap.amount_cents}¢，代币：{dailySnap.total_tokens}</div>
+                  ) : <div className="text-sm text-gray-500">暂无</div>}
+                </Card>
+                <Card>
+                  <div className="font-semibold mb-1">近 7 日汇总</div>
+                  {summarySnap ? (
+                    <div className="text-sm text-gray-700">金额：{summarySnap.total_amount_cents}¢，代币：{summarySnap.total_tokens}</div>
+                  ) : <div className="text-sm text-gray-500">暂无</div>}
+                </Card>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Card>
