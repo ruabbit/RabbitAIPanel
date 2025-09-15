@@ -4,13 +4,24 @@ function getApiBase() {
   try {
     const fromLocal = isDebug() && typeof window !== 'undefined' ? (localStorage.getItem('api_base') || '') : ''
     const fromEnv = (import.meta?.env?.VITE_API_BASE || '')
-    const base = (fromLocal || fromEnv || '').trim()
-    return base.replace(/\/+$/,'')
+    let base = (fromLocal || fromEnv || '').trim()
+    if (!base) return ''
+
+    // Normalize common mistakes:
+    // 1) "http:/host" -> "http://host"
+    base = base.replace(/^(https?:)\/(?!\/)/i, '$1//')
+    // 2) Missing scheme -> default to http://
+    if (!/^https?:\/\//i.test(base)) {
+      base = 'http://' + base
+    }
+    // 3) Drop trailing slashes
+    base = base.replace(/\/+$/, '')
+    return base
   } catch { return '' }
 }
 // Dev-time warning if API base unresolved
 try {
-  if (import.meta?.env?.DEV && typeof window !== 'undefined') {
+  if ((import.meta.env && import.meta.env.DEV) && typeof window !== 'undefined') {
     const initial = getApiBase()
     if (!initial) {
       console.warn('[Dev] API Base is empty. Set it via 右上角“配置”或 .env VITE_API_BASE')

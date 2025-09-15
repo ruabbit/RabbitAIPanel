@@ -4,13 +4,13 @@ import { currentApiBase } from '../utils/api'
 import { isDebug } from '../utils/dev'
 
 export default function Health() {
-  const envApi = import.meta?.env?.VITE_API_BASE || ''
-  const envDebug = import.meta?.env?.VITE_DEBUG
+  const envApi = (import.meta.env && import.meta.env.VITE_API_BASE) || ''
+  const envDebug = import.meta.env && import.meta.env.VITE_DEBUG
   const resolvedBase = currentApiBase()
   const lsBase = typeof window !== 'undefined' ? (localStorage.getItem('api_base') || '') : ''
-  const mode = import.meta?.env?.MODE || ''
-  const dev = !!import.meta?.env?.DEV
-  const prod = !!import.meta?.env?.PROD
+  const mode = (import.meta.env && import.meta.env.MODE) || ''
+  const dev = !!(import.meta.env && import.meta.env.DEV)
+  const prod = !!(import.meta.env && import.meta.env.PROD)
 
   return (
     <Container size="md">
@@ -32,4 +32,3 @@ export default function Health() {
     </Container>
   )
 }
-

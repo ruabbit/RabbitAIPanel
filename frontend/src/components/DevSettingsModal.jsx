@@ -13,7 +13,7 @@ export default function DevSettingsModal({ open, onClose }) {
     setApiKey(localStorage.getItem('dev_api_key') || '')
     setDevUserId(localStorage.getItem('dev_user_id') || '1')
     setProvider(localStorage.getItem('social_provider') || 'google')
-    setApiBase(localStorage.getItem('api_base') || (import.meta?.env?.VITE_API_BASE || ''))
+    setApiBase(localStorage.getItem('api_base') || ((import.meta.env && import.meta.env.VITE_API_BASE) || ''))
   }, [open])
 
   const save = () => {
