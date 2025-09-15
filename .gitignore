@@ -30,3 +30,7 @@ coverage.xml
 
 # Ignore local template examples
 example/
+
+# Frontend build artifacts
+/frontend/node_modules/
+/frontend/dist/
