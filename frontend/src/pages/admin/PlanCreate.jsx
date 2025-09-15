@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { createPlan, updatePlanMeta, upsertDailyLimit, upsertUsagePlan } from '../../utils/api'
 import Container from '../../primer/Container'
 import Button from '../../primer/Button'
@@ -6,14 +7,15 @@ import Select from '../../components/Select'
 import Card from '../../primer/Card'
 
 export default function PlanCreate() {
-  const [name, setName] = useState('Test Plan')
+  const navigate = useNavigate()
+  const [name, setName] = useState('')
   const [type, setType] = useState('daily_limit')
   const [currency, setCurrency] = useState('USD')
-  const [meta, setMeta] = useState('{"stripe_price_id":"price_xxx_optional"}')
+  const [meta, setMeta] = useState('')
   const [planId, setPlanId] = useState('')
   const [msg, setMsg] = useState('')
   // type-specific fields
-  const [dlc, setDlc] = useState('2000')
+  const [dlc, setDlc] = useState('')
   const [policy, setPolicy] = useState('block')
   const [reset, setReset] = useState('00:00')
   const [billing, setBilling] = useState('monthly')
@@ -33,6 +35,8 @@ export default function PlanCreate() {
         await upsertUsagePlan({ planId: pid, billingCycle: billing, minCommitCents: minCommit ? Number(minCommit) : undefined, creditGrantCents: creditGrant ? Number(creditGrant) : undefined })
       }
       setMsg(`创建成功 plan_id=${pid}`)
+      // redirect to new detail page
+      navigate(`/admin/plans/${encodeURIComponent(pid)}`)
     } catch (e) { setMsg(String(e)) }
   }
   const onUpdateMeta = async () => {
@@ -63,8 +67,8 @@ export default function PlanCreate() {
               <input id="pl-currency" className="rr-input" value={currency} onChange={e=>setCurrency(e.target.value)} placeholder="USD" />
             </div>
             <div className="md:col-span-2">
-              <label className="rr-label" htmlFor="pl-meta">meta JSON</label>
-              <input id="pl-meta" className="rr-input" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='{"stripe_price_id":"price_xxx_optional"}' />
+              <label className="rr-label" htmlFor="pl-meta">meta JSON（可选）</label>
+              <input id="pl-meta" className="rr-input" value={meta} onChange={e=>setMeta(e.target.value)} placeholder='' />
             </div>
           </div>
           {/* type-specific inputs */}
