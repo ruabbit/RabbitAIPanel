@@ -4,11 +4,13 @@ WORKDIR /app
 
 # Install deps first to leverage Docker layer cache
 COPY frontend/package.json frontend/package-lock.json /app/
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # Build with API base baked in
 ARG VITE_API_BASE
 ENV VITE_API_BASE=${VITE_API_BASE}
+ARG VITE_DEBUG
+ENV VITE_DEBUG=${VITE_DEBUG}
 
 COPY frontend/ /app/
 RUN npm run build
@@ -16,4 +18,3 @@ RUN npm run build
 # Run preview server
 EXPOSE 5173
 CMD ["npm", "run", "preview:host"]
-
