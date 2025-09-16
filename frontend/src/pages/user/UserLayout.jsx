@@ -11,7 +11,7 @@ export default function UserLayout({ children }) {
     { label: '钱包', to: '/dashboard/wallets', icon: 'folder' },
     { label: '流水', to: '/dashboard/ledger', icon: 'docs' },
     { label: '代理测试', to: '/dashboard/proxy', icon: 'users' },
-    { label: '购买/充值', to: '/purchase', icon: 'docs' },
+    { label: '购买/充值', to: '/dashboard/purchase', icon: 'docs' },
   ]
   return (
     <AppFrame title="用户后台" items={items}>{children}</AppFrame>

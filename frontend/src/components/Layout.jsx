@@ -6,7 +6,8 @@ import Footer from './Footer'
 export default function Layout({ children }) {
   const location = useLocation()
   const p = location.pathname
-  const hideChrome = p === '/' || p.startsWith('/primer') || p.startsWith('/dashboard') || p.startsWith('/admin')
+  const isAdminLogin = p === '/admin/login'
+  const hideChrome = p === '/' || p.startsWith('/primer') || p.startsWith('/dashboard') || (p.startsWith('/admin') && !isAdminLogin)
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {!hideChrome && <Navbar />}

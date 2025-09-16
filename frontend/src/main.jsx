@@ -70,6 +70,7 @@ const router = createBrowserRouter([
           { path: 'wallets', element: <Wallets /> },
           { path: 'ledger', element: <Ledger /> },
           { path: 'proxy', element: <Proxy /> },
+          { path: 'purchase', element: <Purchase /> },
         ],
       },
       {
@@ -112,7 +113,6 @@ const router = createBrowserRouter([
   { path: '/health', element: <Health /> },
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
-  { path: '/purchase', element: <Purchase /> },
   { path: '/settings', element: <Settings /> },
 ])
 
