@@ -182,8 +182,10 @@ export default function AppFrame({ title = '', items = [], children, settingsTo:
                     <Link to="/settings" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=> setUserMenuOpen(false)}>设置</Link>
                     <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=>{
                       try {
-                        // best-effort logout in debug: clear dev_user_id
                         localStorage.removeItem('dev_user_id')
+                        localStorage.removeItem('dev_api_key')
+                        localStorage.removeItem('admin_auth_token')
+                        // 保留 api_base 以免丢失配置
                       } catch {}
                       window.location.href = '/'
                     }}>退出</button>

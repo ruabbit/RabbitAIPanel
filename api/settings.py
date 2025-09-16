@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any
 
-from .deps import dev_auth
+from .deps import admin_auth
 from middleware.db import SessionLocal
 from middleware.config import settings
 from middleware.runtime_config import is_sensitive, clear_cache, get as rc_get
@@ -48,7 +48,7 @@ def _get_db_layer() -> int:
 
 
 @router.get("")
-def get_settings(ctx: dict = Depends(dev_auth)):
+def get_settings(ctx: dict = Depends(admin_auth)):
     all_settings = _fetch_all_settings()
     # Do not expose raw DEV_API_KEY; just indicate if configured
     dev_key_configured = bool(settings.DEV_API_KEY)
@@ -61,7 +61,7 @@ def get_settings(ctx: dict = Depends(dev_auth)):
 
 
 @router.get("/keys")
-def get_settings_keys(ctx: dict = Depends(dev_auth)):
+def get_settings_keys(ctx: dict = Depends(admin_auth)):
     groups: dict[str, list[dict[str, Any]]] = {}
     for item in SETTINGS_KEYS:
         g = item.get("group") or "other"
@@ -78,7 +78,7 @@ class UpdateSettingsBody(BaseModel):
 
 
 @router.patch("")
-def update_settings(body: UpdateSettingsBody, ctx: dict = Depends(dev_auth)):
+def update_settings(body: UpdateSettingsBody, ctx: dict = Depends(admin_auth)):
     # Disallow updating protected keys
     protected = {"db_layer", "DEV_API_KEY", "dev_api_key", "DevApiKey", "Dev_Api_Key"}
     raw_updates = {k: v for k, v in (body.values or {}).items() if k not in protected}
@@ -92,6 +92,9 @@ def update_settings(body: UpdateSettingsBody, ctx: dict = Depends(dev_auth)):
             updates[k] = "" if v is None else str(v)
             continue
         t = m.get("type") or "string"
+        # restrict admin token changes to debug mode only
+        if k == "ADMIN_AUTH_TOKEN" and not ctx.get("is_debug"):
+            raise HTTPException(status_code=403, detail="forbidden")
         if t == "bool":
             sval = str(v).strip().lower()
             b = sval in ("1", "true", "yes", "on") if not isinstance(v, bool) else bool(v)

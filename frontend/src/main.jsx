@@ -20,6 +20,9 @@ import Ledger from './pages/user/Ledger'
 import Proxy from './pages/user/Proxy'
 import Health from './pages/Health'
 import Settings from './pages/Settings'
+import Login from './pages/Login'
+import AdminLogin from './pages/admin/AdminLogin'
+import Purchase from './pages/Purchase'
 
 // admin pages with sidebar
 import AdminLayout from './pages/admin/AdminLayout'
@@ -107,6 +110,9 @@ const router = createBrowserRouter([
   },
       { path: '/auth/callback', element: <AuthCallback /> },
   { path: '/health', element: <Health /> },
+  { path: '/login', element: <Login /> },
+  { path: '/admin/login', element: <AdminLogin /> },
+  { path: '/purchase', element: <Purchase /> },
   { path: '/settings', element: <Settings /> },
 ])
 

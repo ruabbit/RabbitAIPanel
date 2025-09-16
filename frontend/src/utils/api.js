@@ -41,6 +41,10 @@ function headers() {
     if (apiKey) h['x-api-key'] = apiKey
     if (devUserId) h['x-dev-user-id'] = devUserId
   }
+  try {
+    const adminToken = localStorage.getItem('admin_auth_token')
+    if (adminToken) h['x-admin-auth'] = adminToken
+  } catch {}
   return h
 }
 
@@ -456,6 +460,13 @@ export async function devSeedUsage({ userId, count = 10, minTokens = 100, maxTok
   const res = await fetch(`${apiBase()}/v1/dev/seed/usage`, {
     method: 'POST', headers: headers(), body: JSON.stringify(body)
   })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+// ===== Admin
+export async function adminPing() {
+  const res = await fetch(`${apiBase()}/v1/admin/ping`, { headers: headers() })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }

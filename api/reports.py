@@ -8,7 +8,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from .deps import request_context
+from .deps import request_context, admin_auth
 from middleware.db import SessionLocal
 from middleware.models import Usage, OverdraftAlert, Wallet, ApiKey
 from middleware.lago.service import LagoPayment
@@ -167,7 +167,7 @@ def period_team_report(
     success: Optional[bool] = Query(None, description="filter by success flag"),
     group_by: str = Query("total", pattern=r"^(total|model|day|model_day)$"),
     format: str = Query("json", pattern=r"^(json|csv)$"),
-    ctx: dict = Depends(request_context),
+    ctx: dict = Depends(admin_auth),
 ):
     # parse dates
     try:

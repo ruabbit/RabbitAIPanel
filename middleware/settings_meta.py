@@ -43,6 +43,9 @@ KEYS: list[dict[str, Any]] = [
     {"key": "CONNECTOR_GOOGLE_ID", "group": "auth", "label": "Connector Google ID", "type": "string", "sensitive": False},
     {"key": "CONNECTOR_GITHUB_ID", "group": "auth", "label": "Connector GitHub ID", "type": "string", "sensitive": False},
 
+    # Admin auth (production temporary scheme)
+    {"key": "ADMIN_AUTH_TOKEN", "group": "auth", "label": "Admin Auth Token", "type": "string", "sensitive": True, "desc": "Admin header token for management APIs (x-admin-auth)"},
+
     # Rate limiting
     {"key": "RATE_LIMIT_ENABLED", "group": "rate_limit", "label": "Rate Limit Enabled", "type": "bool", "sensitive": False},
     {"key": "RATE_LIMIT_WINDOW_SEC", "group": "rate_limit", "label": "Window (sec)", "type": "int", "min": 1, "sensitive": False},

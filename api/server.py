@@ -20,7 +20,7 @@ from middleware.payments.service import create_checkout, process_webhook, refund
 from middleware.billing.service import process_stripe_invoice_webhook, process_stripe_subscription_webhook
 from middleware.config import settings
 from middleware.runtime_config import get as rc_get
-from .deps import dev_auth, request_context
+from .deps import dev_auth, request_context, admin_auth
 from .wallets import router as wallets_router
 from .plans import router as plans_router
 from .proxy import router as proxy_router
@@ -30,6 +30,7 @@ from .billing import router as billing_router
 from .dev import router as dev_router
 from .teams import router as teams_router
 from .auth import router as auth_router
+from .admin import router as admin_router
 from .users import router as users_router
 from .settings import router as settings_router
 from middleware.integrations.litellm_sync import sync_wallets_to_litellm
@@ -372,15 +373,16 @@ def demo_payment_element():
 
 # Mount wallets API
 app.include_router(wallets_router)
-app.include_router(plans_router)
+app.include_router(plans_router, dependencies=[Depends(admin_auth)])
 app.include_router(proxy_router)
 app.include_router(lago_router)
 app.include_router(reports_router)
-app.include_router(billing_router)
+app.include_router(billing_router, dependencies=[Depends(admin_auth)])
 app.include_router(dev_router)
-app.include_router(teams_router)
+app.include_router(teams_router, dependencies=[Depends(admin_auth)])
 app.include_router(users_router)
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(settings_router)
 
 
