@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Container from '../primer/Container'
 import Card from '../primer/Card'
 import Button from '../primer/Button'
-import { currentApiBase, getStripePublishableKey, createCheckoutIntent } from '../utils/api'
+import { currentApiBase, getStripePublishableKey, createCheckoutIntent, getWallets, listCustomers, listInvoices } from '../utils/api'
 import { isDebug } from '../utils/dev'
 import { loadStripe } from '@stripe/stripe-js'
 
@@ -51,9 +51,45 @@ export default function Purchase() {
   useEffect(()=>{
     mountedRef.current = true
     setupPayment()
+    ;(async () => {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const cs = params.get('payment_intent_client_secret')
+        if (cs) {
+          setInfo('正在确认支付状态…')
+          const { publishable_key } = await getStripePublishableKey()
+          const stripe = await loadStripe(publishable_key)
+          const pi = await stripe.retrievePaymentIntent(cs)
+          const status = pi?.paymentIntent?.status
+          if (status === 'succeeded') {
+            setOk(true)
+            await refreshPostPayment()
+          } else if (status) {
+            setErr('支付未完成，请稍后重试')
+          }
+        }
+      } catch {}
+    })()
     return ()=>{ mountedRef.current = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function refreshPostPayment() {
+    try {
+      const uid = localStorage.getItem('dev_user_id')
+      if (!uid) return
+      const w = await getWallets(Number(uid))
+      setInfo(`支付成功。余额（${(w.wallets||[]).map(e=>e.currency+':'+(e.balance_cents||0)).join(', ')}）已更新。`)
+      const lc = await listCustomers({ entityType: 'user', entityId: Number(uid), limit: 1, offset: 0 })
+      const cust = (lc.customers || [])[0]
+      if (cust) {
+        const inv = await listInvoices({ customerId: cust.id, limit: 5, offset: 0 })
+        // 仅提示已生成账单数（明细用户可去发票页查看）
+        const count = (inv.invoices || []).length
+        if (count > 0) setInfo(v => v + ` 最近账单条目：${count} 条。`)
+      }
+    } catch {}
+  }
 
   async function onConfirm() {
     setErr(''); setOk(false); setPaying(true)
@@ -61,7 +97,8 @@ export default function Purchase() {
       if (!stripeRef.current || !elementsRef.current) throw new Error('not_ready')
       const stripe = stripeRef.current
       const elements = elementsRef.current
-      const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required' })
+      const returnUrl = `${window.location.origin}/purchase?return=1`
+      const { error, paymentIntent } = await stripe.confirmPayment({ elements, confirmParams: { return_url: returnUrl }, redirect: 'if_required' })
       if (error) throw new Error(error.message || '支付失败')
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         setOk(true)

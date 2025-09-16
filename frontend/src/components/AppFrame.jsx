@@ -179,6 +179,7 @@ export default function AppFrame({ title = '', items = [], children, settingsTo:
                 </button>
                 {userMenuOpen && (
                   <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded shadow z-50">
+                    <Link to="/purchase" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=> setUserMenuOpen(false)}>购买/充值</Link>
                     <Link to="/settings" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=> setUserMenuOpen(false)}>设置</Link>
                     <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={()=>{
                       try {
