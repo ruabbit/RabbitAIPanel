@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Container from '../primer/Container'
 import Card from '../primer/Card'
 import Button from '../primer/Button'
@@ -7,6 +8,7 @@ import { isDebug } from '../utils/dev'
 import { loadStripe } from '@stripe/stripe-js'
 
 export default function Purchase() {
+  const navigate = useNavigate()
   const [amount, setAmount] = useState('1000') // cents
   const [currency, setCurrency] = useState('USD')
   const [err, setErr] = useState('')
@@ -64,6 +66,7 @@ export default function Purchase() {
           if (status === 'succeeded') {
             setOk(true)
             await refreshPostPayment()
+            setTimeout(()=> navigate('/dashboard/wallets'), 1200)
           } else if (status) {
             setErr('支付未完成，请稍后重试')
           }
@@ -102,6 +105,8 @@ export default function Purchase() {
       if (error) throw new Error(error.message || '支付失败')
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         setOk(true)
+        await refreshPostPayment()
+        setTimeout(()=> navigate('/dashboard/wallets'), 1200)
       } else {
         setErr('支付未完成，请稍后重试')
       }
