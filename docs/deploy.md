@@ -1,18 +1,20 @@
-# 部署手册（Debian 13，本地 Demo，无真实凭据）
+# 部署手册
 
-本文档记录在一台全新 Debian 13 服务器（示例：100.110.0.229）上部署本系统 Demo 的步骤。所有步骤均可直接复制执行；每成功一小步即可在此文档勾选完成。
+本文档提供两种部署方式：
+- 方式 A：直接部署（Python + Node）
+- 方式 B：Docker Compose 部署（后端 + 前端）
 
 ## 0. 前置信息
 
-- 目标：本地 Demo（不配置真实 Logto/Stripe 凭据），跑通后端 API 与前端页面，数据库使用 Docker 中的 Postgres。
-- 系统：Debian 13（trixie）。
+- 目标：跑通后端 API 与前端页面；可选接入 Stripe/Lago/LiteLLM/Logto。
+- 示例系统：Debian 13（trixie），其它 Linux 亦可。
 - 目录规划：
   - 后端与前端代码：`/opt/mw`
   - Python 虚拟环境：`/opt/mw/.venv`
   - 环境变量文件（后端）：`/opt/mw/.env`
   - Docker Compose（数据库）：`/opt/mw/deploy/docker-compose.yml`
 
-## 1. 基础环境安装（一次性）
+## 1A.（方式 A）基础环境安装（一次性）
 
 ```bash
 sudo apt update -y
@@ -28,7 +30,7 @@ node -v
 npm -v
 ```
 
-### 1.2 安装 Docker Engine（用于数据库容器）
+### 1.2（可选）安装 Docker Engine（若用 Docker 启动数据库或使用方式 B）
 
 ```bash
 sudo install -m 0755 -d /etc/apt/keyrings
@@ -43,7 +45,7 @@ sudo systemctl enable --now docker
 sudo usermod -aG docker $USER   # 可选，允许当前用户无需 sudo 运行 docker
 ```
 
-## 2. 拉取代码与准备目录
+## 2A. 拉取代码与准备目录
 
 ```bash
 sudo mkdir -p /opt/mw
@@ -58,7 +60,7 @@ cd /opt/mw
 
 确认项目根目录存在：`api/`、`middleware/`、`frontend/`、`requirements.txt`、`deploy/docker-compose.yml` 等。
 
-## 3. 启动数据库（Postgres via Docker）
+## 3A. 启动数据库（Postgres via Docker，可选）
 
 ```bash
 cd /opt/mw/deploy
@@ -71,7 +73,7 @@ docker ps  # 查看 mw_postgres 是否 healthy
 - DB：`appdb`
 - 用户/密码：`app/app`
 
-## 4. 配置后端环境 & 运行后端
+## 4A. 配置后端环境 & 运行后端
 
 ### 4.1 准备虚拟环境与依赖
 
@@ -134,7 +136,7 @@ curl -i http://127.0.0.1:8000/healthz
 
 （可选）生产建议使用 systemd 创建服务 `middleware.service`，此处略。
 
-## 5. 构建与运行前端
+## 5A. 构建与运行前端
 
 ### 5.1 配置前端 API 基址（很重要）
 
@@ -182,7 +184,7 @@ npm run dev:debug:host
 
 说明：Debug=ON 时才会读取“开发配置”中的覆盖（api_base、dev_api_key、x-dev-user-id 等）。
 
-## 6. 本地 Demo 验证
+## 6A. 本地 Demo 验证
 
 1) Navbar“配置”中填写：
 - DEV_API_KEY: 与后端 `.env` 中一致（如 `dev_123456`）
@@ -198,14 +200,47 @@ npm run dev:debug:host
 4) 代理测试（/proxy）：
 - 输入上游 `x-litellm-api-key` 与 `model`、消息文本，调用 `/v1/proxy/chat/completions` 观察返回。
 
-## 7. 故障排查
+## 7A. 故障排查（方式 A）
 
 - 端口占用：确保 8000（后端）、5173（前端 preview）、5432（Postgres）未被占用。
 - 数据库连接：若无法连接 Postgres，检查 `docker ps` 与 `DATABASE_URL`。
 - 权限问题：确保 `/opt/mw` 目录属当前用户；venv 使用相同用户创建。
 - 日志：后端日志包含 `x-request-id`，有助于排错；返回头也会带 `x-request-id`。
 
-## 8. 后续（真测与生产）
+## 8A. 后续（真测与生产）
+
+---
+
+## 1B.（方式 B）Docker Compose 部署（后端 + 前端）
+
+### 1B.1 构建与启动
+
+项目根目录执行：
+
+```
+docker compose build
+docker compose up -d
+```
+
+启动后：
+- API: http://localhost:8000
+- 前端: http://localhost:5173
+
+### 1B.2 配置说明
+
+- 后端容器 `api`：
+  - 默认 `DATABASE_URL=sqlite:////data/dev.db`（挂载卷持久化）；修改为外部 DB 时，设置真实连接串。
+  - `DEV_API_KEY` 用于开发鉴权，compose 默认设置 `dev-secret`。
+  - 其它运行时配置（Stripe/Lago/LiteLLM/Logto/限流等）建议通过“管理后台 → 设置”或 `/v1/settings` 写入数据库；运行中即时生效。
+- 前端容器 `web`：
+  - 构建时通过 `--build-arg VITE_API_BASE=<后端地址>` 注入后端 API 基址；compose 默认 `http://localhost:8000`。
+  - 修改 API 地址：`docker compose build --build-arg VITE_API_BASE=https://your.api`。
+
+### 1B.3 常见问题
+
+- 端口占用：确保 8000、5173 未被占用。
+- API Base：前端必须配置正确的 `VITE_API_BASE` 指向后端。
+- DB 设置：生产中仅 `DATABASE_URL`、`DEV_API_KEY` 使用环境变量，其它配置建议在“设置”页写入 DB（DB-first 模式）。
 
 - Logto：提供 tenant 与 client/secret、connector_target_id 后，后端会打通社交绑定与资料回填完整链路。
 - Stripe：提供 secret key/webhook secret 后，可测试 ensure、推送发票与回调处理。

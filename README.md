@@ -57,6 +57,43 @@ This milestone (M1) delivers the plugin framework and data layer.
 - The server echoes `X-Request-ID` on every response and includes it in logs.
 - Selected endpoints also include `request_id` in the JSON response (checkout, refund, status, wallets, ledger, config, healthz, webhook, root) for easier correlation.
 
+## Deployment
+
+### A) Direct deploy (backend + frontend)
+
+Backend
+- Python 3.10+; create venv and install deps:
+  - `python3 -m venv .venv && source .venv/bin/activate`
+  - `pip install --upgrade pip && pip install -r requirements.txt`
+- Env (minimal):
+  - `DATABASE_URL` (default fallback `sqlite:///./dev.db`)
+  - `DEV_API_KEY` (for dev auth/testing)
+- Run: `uvicorn api.server:app --host 0.0.0.0 --port 8000`
+
+Frontend
+- Set backend base: create `frontend/.env` with `VITE_API_BASE=http://<host>:8000`
+- Build and preview: `npm --prefix frontend ci && npm --prefix frontend run build && npm --prefix frontend run preview:host`
+- Visit: `http://<host>:5173`
+
+Notes
+- Most runtime configs (Stripe/Lago/LiteLLM/Logto/limits) are DB-first via admin Settings page or `/v1/settings` API; only `DATABASE_URL` and `DEV_API_KEY` remain env-only.
+- For production, front a reverse proxy (Nginx/Caddy) and consider systemd for the backend service.
+
+### B) Docker deploy (compose: backend + frontend)
+
+Build and run
+```
+docker compose build
+docker compose up -d
+```
+- API: http://localhost:8000
+- Frontend: http://localhost:5173
+
+Customize
+- Change backend DB by setting `DATABASE_URL` on `api` service.
+- Change dev key by setting `DEV_API_KEY` on `api` service.
+- Change frontend API base by rebuilding with build-arg, e.g. `docker compose build --build-arg VITE_API_BASE=https://your.api`.
+
 ## Configuration Model
 - Source of truth:
   - Env-only: `DATABASE_URL` (default `sqlite:///./dev.db`), `DEV_API_KEY` (dev auth).
@@ -86,7 +123,7 @@ This milestone (M1) delivers the plugin framework and data layer.
 - Implementation plan: `docs/implementation_plan.md`
 - Billing & Lago integration: `docs/billing_and_lago.md`
 - Frontend header controls & debug gating: `docs/header_controls.md`
-- Deploy guide (includes frontend scripts): `docs/deploy.md`
+- Deploy guide (direct + docker): `docs/deploy.md`
 
 ## Docker
 Build and run with Docker Compose (backend + frontend):
