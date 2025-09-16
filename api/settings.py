@@ -161,7 +161,7 @@ def _http_get(url: str, headers: dict[str, str] | None = None, timeout: int = 5)
 
 
 @router.post("/test/stripe")
-def test_stripe(ctx: dict = Depends(dev_auth)):
+def test_stripe(ctx: dict = Depends(admin_auth)):
     try:
         import stripe  # type: ignore
     except Exception as e:
@@ -183,7 +183,7 @@ def test_stripe(ctx: dict = Depends(dev_auth)):
 
 
 @router.post("/test/lago")
-def test_lago(ctx: dict = Depends(dev_auth)):
+def test_lago(ctx: dict = Depends(admin_auth)):
     base = rc_get("LAGO_API_URL", str, None)
     key = rc_get("LAGO_API_KEY", str, None)
     if not base:
@@ -204,7 +204,7 @@ def test_lago(ctx: dict = Depends(dev_auth)):
 
 
 @router.post("/test/litellm")
-def test_litellm(ctx: dict = Depends(dev_auth)):
+def test_litellm(ctx: dict = Depends(admin_auth)):
     base = rc_get("LITELLM_BASE_URL", str, None)
     if not base:
         return {"ok": False, "type": "litellm", "error": "not_configured", "request_id": ctx.get("request_id")}

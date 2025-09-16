@@ -34,3 +34,5 @@ example/
 # Node.js build artifacts (global)
 node_modules/
 dist/
+release/
+RabbitAIPanel-*.tar.gz
