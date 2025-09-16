@@ -509,3 +509,20 @@ export async function testLiteLLMConnection() {
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
+
+// ===== Payments / Stripe
+export async function getStripePublishableKey() {
+  const res = await fetch(`${apiBase()}/v1/config/stripe`, { headers: headers() })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() // { publishable_key }
+}
+
+export async function createCheckoutIntent({ userId, amountCents, currency = 'USD', provider = 'stripe' }) {
+  const body = { amount_cents: amountCents, currency, provider }
+  if (userId) body.user_id = userId
+  const res = await fetch(`${apiBase()}/v1/payments/checkout`, {
+    method: 'POST', headers: headers(), body: JSON.stringify(body)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() // { payload: { client_secret } }
+}

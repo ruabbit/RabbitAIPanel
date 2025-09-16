@@ -1,18 +1,78 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Container from '../primer/Container'
 import Card from '../primer/Card'
 import Button from '../primer/Button'
-import { currentApiBase } from '../utils/api'
+import { currentApiBase, getStripePublishableKey, createCheckoutIntent } from '../utils/api'
 import { isDebug } from '../utils/dev'
+import { loadStripe } from '@stripe/stripe-js'
 
 export default function Purchase() {
   const [amount, setAmount] = useState('1000') // cents
   const [currency, setCurrency] = useState('USD')
   const [err, setErr] = useState('')
+  const [info, setInfo] = useState('')
+  const [paying, setPaying] = useState(false)
+  const [ok, setOk] = useState(false)
   const debug = isDebug()
   const api = currentApiBase()
 
   const demoUrl = `${api || ''}/demo/payment_element?api=${encodeURIComponent(api || '')}`
+
+  const stripeRef = useRef(null)
+  const elementsRef = useRef(null)
+  const mountedRef = useRef(false)
+
+  async function setupPayment() {
+    setErr(''); setInfo(''); setOk(false)
+    try {
+      const { publishable_key } = await getStripePublishableKey()
+      const stripe = await loadStripe(publishable_key)
+      stripeRef.current = stripe
+      // Create PI
+      const uid = (localStorage.getItem('dev_user_id') || '')
+      const intent = await createCheckoutIntent({ userId: uid ? Number(uid) : undefined, amountCents: Number(amount), currency })
+      const clientSecret = intent?.payload?.client_secret
+      if (!clientSecret) throw new Error('no_client_secret')
+      // Elements + Payment Element
+      const elements = stripe.elements({ clientSecret })
+      elementsRef.current = elements
+      const paymentElement = elements.create('payment')
+      paymentElement.mount('#payment-element')
+      setInfo('支付组件已就绪')
+    } catch (e) {
+      if (debug) {
+        setInfo('演示模式：未接入真实支付，您可以使用演示页体验流程。')
+      } else {
+        setErr('当前不可用，请稍后再试')
+      }
+    }
+  }
+
+  useEffect(()=>{
+    mountedRef.current = true
+    setupPayment()
+    return ()=>{ mountedRef.current = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function onConfirm() {
+    setErr(''); setOk(false); setPaying(true)
+    try {
+      if (!stripeRef.current || !elementsRef.current) throw new Error('not_ready')
+      const stripe = stripeRef.current
+      const elements = elementsRef.current
+      const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required' })
+      if (error) throw new Error(error.message || '支付失败')
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        setOk(true)
+      } else {
+        setErr('支付未完成，请稍后重试')
+      }
+    } catch (e) {
+      if (debug) setInfo('演示模式：未接入真实支付，您可以使用演示页体验流程。')
+      else setErr('当前不可用，请稍后再试')
+    } finally { setPaying(false) }
+  }
 
   return (
     <Container size="sm">
@@ -29,9 +89,15 @@ export default function Purchase() {
               <input className="rr-input" value={currency} onChange={e=>setCurrency(e.target.value)} />
             </div>
           </div>
+          <div className="mt-4">
+            <div id="payment-element" className="border border-gray-200 rounded p-3"></div>
+          </div>
           <div className="mt-4 flex items-center gap-2">
+            <Button color="blue" disabled={paying} onClick={onConfirm}>{paying ? '支付中…' : '确认支付'}</Button>
             <a className="inline-flex items-center bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-500" href={demoUrl} target="_blank" rel="noreferrer">在新页面打开支付演示</a>
             {err && <span className="text-sm text-red-600">{err}</span>}
+            {ok && <span className="text-sm text-green-700">支付成功</span>}
+            {info && <span className="text-sm text-gray-600">{info}</span>}
           </div>
           {debug && (
             <div className="text-xs text-gray-600 mt-3">仅演示（Debug）：此页面使用后端自带 Payment Element 演示页打开新窗口进行 Stripe 支付体验。若未配置 Stripe，将无法实际支付。</div>
@@ -40,4 +106,3 @@ export default function Purchase() {
       </div>
     </Container>
   )}
-
